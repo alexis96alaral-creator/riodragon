@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Cocina · Río Dragón</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Firebase SDK v9 compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --gold:    #d4ac0d;
+      --red:     #c0392b;
+      --ink:     #1a0a00;
+      --success: #27ae60;
+      --warn:    #e67e22;
+      --blue:    #2980b9;
+      --font-h:  'Noto Serif SC', serif;
+      --font-b:  'DM Sans', sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-b);
+      background: #0d0d0d;
+      color: #fff;
+      min-height: 100vh;
+    }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+    /* ─── LOGIN SCREEN ───────────────────────────────────── */
+    #loginScreen {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(ellipse at 60% 40%, #1a0a00 0%, #0d0d0d 70%);
+      padding: 20px;
+    }
+    .login-box {
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 24px;
+      padding: 42px 36px;
+      width: 100%; max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .login-logo {
+      width: 72px; height: 72px; border-radius: 50%;
+      object-fit: cover; border: 3px solid var(--gold);
+      margin: 0 auto 16px;
+    }
+    .login-box h1 {
+      font-family: var(--font-h); color: var(--gold);
+      font-size: 1.5rem; margin-bottom: 4px;
+    }
+    .login-box .sub { color: rgba(255,255,255,.4); font-size: .85rem; margin-bottom: 32px; }
+    .login-box input {
+      width: 100%;
+      background: rgba(255,255,255,.07);
+      border: 1.5px solid rgba(255,255,255,.14);
+      border-radius: 12px;
+      padding: 14px 18px; color: #fff;
+      font-size: 1rem; text-align: center;
+      letter-spacing: .25em; font-weight: 600;
+      outline: none; transition: border-color .2s;
+      margin-bottom: 14px;
+    }
+    .login-box input:focus { border-color: var(--gold); }
+    .login-box .btn-login {
+      width: 100%; background: var(--gold); color: var(--ink);
+      padding: 14px; border-radius: 12px; font-weight: 700;
+      font-size: 1rem; transition: background .2s, transform .1s;
+    }
+    .login-box .btn-login:hover  { background: #b7950b; }
+    .login-box .btn-login:active { transform: scale(.97); }
+    #loginErr { color: #e74c3c; font-size: .82rem; margin-top: 10px; min-height: 18px; }
+
+    /* ─── KITCHEN PANEL ──────────────────────────────────── */
+    #kitchenScreen { display: none; }
+
+    /* Top bar */
+    .kbar {
+      background: #111; border-bottom: 1px solid rgba(255,255,255,.07);
+      padding: 0 24px; height: 66px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .kbar-left { display: flex; align-items: center; gap: 14px; }
+    .kbar-logo {
+      width: 42px; height: 42px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--gold);
+    }
+    .kbar-title { font-family: var(--font-h); color: var(--gold); font-size: 1.05rem; }
+    .kbar-sub   { font-size: .72rem; color: rgba(255,255,255,.35); margin-top: 1px; }
+
+    .kbar-right { display: flex; align-items: center; gap: 16px; }
+
+    /* Live indicator */
+    .live-dot {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .75rem; color: var(--success);
+    }
+    .live-dot .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+      animation: pulse 1.4s ease infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.3)} }
+
+    .badge-pending {
+      background: var(--red); color: #fff;
+      font-size: .75rem; font-weight: 700;
+      padding: 4px 12px; border-radius: 50px;
+    }
+    .btn-logout { color: rgba(255,255,255,.3); font-size: .8rem; transition: color .2s; }
+    .btn-logout:hover { color: #fff; }
+
+    /* Tabs / filter */
+    .filters {
+      display: flex; gap: 8px; padding: 18px 24px 10px;
+      overflow-x: auto;
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn {
+      padding: 7px 18px; border-radius: 50px;
+      font-size: .8rem; font-weight: 600;
+      border: 1.5px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.5);
+      transition: all .2s; white-space: nowrap;
+    }
+    .filter-btn.active { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); color: #fff; }
+    .filter-btn.f-all       { }
+    .filter-btn.f-pendiente { }
+    .filter-btn.f-cocina.active  { border-color: var(--warn);    color: var(--warn);    background: rgba(230,126,34,.12); }
+    .filter-btn.f-camino.active  { border-color: var(--blue);    color: var(--blue);    background: rgba(41,128,185,.12); }
+    .filter-btn.f-entregado.active{ border-color: var(--success); color: var(--success); background: rgba(39,174,96,.12); }
+
+    /* Grid */
+    .kitchen-body { padding: 8px 24px 60px; }
+    #ordersGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 20px;
+    }
+
+    /* Empty state */
+    .k-empty {
+      grid-column: 1/-1; text-align: center;
+      padding: 80px 0; color: rgba(255,255,255,.25);
+    }
+    .k-empty .big { font-size: 4rem; margin-bottom: 14px; }
+
+    /* ── Order card ─────────────────────────────────────── */
+    .order-card {
+      background: #191210;
+      border: 1.5px solid rgba(255,255,255,.07);
+      border-radius: 20px; padding: 22px;
+      transition: border-color .3s, box-shadow .3s;
+      animation: cardIn .35s ease;
+      position: relative; overflow: hidden;
+    }
+    @keyframes cardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+
+    /* new-order flash */
+    .order-card.new-flash {
+      animation: cardIn .35s ease, newFlash 1.2s ease;
+    }
+    @keyframes newFlash {
+      0%  { box-shadow: 0 0 0 0 rgba(212,172,13,.8); }
+      50% { box-shadow: 0 0 0 16px rgba(212,172,13,.0); }
+      100%{ box-shadow: 0 0 0 0 rgba(212,172,13,.0); }
+    }
+
+    .order-card.s-pendiente { border-color: rgba(255,255,255,.1); }
+    .order-card.s-cocina    { border-color: var(--warn);    box-shadow: 0 0 20px rgba(230,126,34,.15); }
+    .order-card.s-camino    { border-color: var(--blue);    box-shadow: 0 0 20px rgba(41,128,185,.15); }
+    .order-card.s-entregado { border-color: var(--success); opacity: .55; }
+
+    /* card top accent bar */
+    .order-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: transparent; transition: background .3s; border-radius: 20px 20px 0 0;
+    }
+    .order-card.s-cocina::before    { background: var(--warn); }
+    .order-card.s-camino::before    { background: var(--blue); }
+    .order-card.s-entregado::before { background: var(--success); }
+
+    .card-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-num  { font-family: var(--font-h); font-size: 1.2rem; color: var(--gold); font-weight: 700; }
+    .card-time { font-size: .72rem; color: rgba(255,255,255,.3); margin-top: 2px; }
+
+    /* status pill */
+    .pill {
+      font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; padding: 4px 11px; border-radius: 50px;
+    }
+    .pill-pendiente { background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); }
+    .pill-cocina    { background: var(--warn);    color: #fff; }
+    .pill-camino    { background: var(--blue);    color: #fff; }
+    .pill-entregado { background: var(--success); color: #fff; }
+
+    /* items */
+    .card-items { margin-bottom: 14px; }
+    .item-row {
+      display: flex; justify-content: space-between;
+      font-size: .88rem; padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      color: rgba(255,255,255,.85);
+    }
+    .item-row:last-child { border: none; }
+    .item-qty { color: var(--gold); font-weight: 700; margin-right: 6px; }
+
+    /* customer block */
+    .card-customer {
+      background: rgba(255,255,255,.04);
+      border-radius: 12px; padding: 12px 14px;
+      font-size: .83rem; color: rgba(255,255,255,.6);
+      line-height: 1.6; margin-bottom: 14px;
+    }
+    .card-customer strong { color: #fff; display: block; margin-bottom: 2px; font-size: .9rem; }
+    .card-customer .phone-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.07); border-radius: 6px;
+      padding: 2px 8px; margin-top: 4px; font-size: .78rem;
+    }
+
+    /* totals */
+    .card-totals {
+      display: flex; justify-content: space-between;
+      font-size: .8rem; color: rgba(255,255,255,.4);
+      margin-bottom: 4px;
+    }
+    .card-grand {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--font-h); color: var(--gold);
+      font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
+    }
+
+    /* action buttons */
+    .card-actions { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .act-btn {
+      padding: 10px 6px; border-radius: 12px;
+      font-size: .75rem; font-weight: 700; text-align: center;
+      transition: opacity .2s, transform .1s; border: 2px solid transparent;
+    }
+    /* action buttons */
+    .card-actions { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+    .act-btn {
+      padding: 10px 6px; border-radius: 12px;
+      font-size: .75rem; font-weight: 700; text-align: center;
+      transition: opacity .2s, transform .1s; border: 2px solid transparent;
+    }
+    .act-btn:active  { transform: scale(.95); }
+    .act-btn.verificar { background: var(--gold);    color: var(--ink); }
+    .act-btn.aceptado  { background: #8e44ad;        color: #fff; }
+    .act-btn.cocina    { background: var(--warn);    color: #fff; }
+    .act-btn.camino    { background: var(--blue);    color: #fff; }
+    .act-btn.entregado { background: var(--success); color: #fff; grid-column: 1/-1; }
+    .act-btn.active    { opacity: 1; border-color: #fff; }
+    .act-btn:not(.active) { opacity: .4; }
+
+    /* timer badge */
+    .card-timer {
+      font-size: .7rem; color: rgba(255,255,255,.3);
+      text-align: right; margin-top: 10px;
+    }
+    .card-timer.urgent { color: var(--red); font-weight: 700; }
+
+    /* notification toast */
+    #toast {
+      position: fixed; bottom: 28px; right: 24px;
+      background: var(--gold); color: var(--ink);
+      font-weight: 700; font-size: .9rem;
+      padding: 14px 22px; border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.4);
+      transform: translateY(80px); opacity: 0;
+      transition: transform .35s ease, opacity .35s ease;
+      z-index: 999; pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+
+    /* sound toggle */
+    .sound-btn {
+      font-size: .8rem; color: rgba(255,255,255,.35);
+      display: flex; align-items: center; gap: 5px; transition: color .2s;
+    }
+    .sound-btn:hover { color: #fff; }
+
+    @media (max-width: 600px) {
+      .kitchen-body { padding: 8px 12px 60px; }
+      .kbar { padding: 0 16px; }
+      .filters { padding: 14px 12px 8px; }
+      #ordersGrid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════
+     LOGIN
+════════════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <img class="login-logo"
+         src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg"
+         alt="Logo" />
+    <h1>Panel de Cocina</h1>
+    <p class="sub">Río Dragón · Acceso exclusivo</p>
+    <input type="password" id="pwdInput" placeholder="••••••••"
+           onkeydown="if(event.key==='Enter') doLogin()" />
+    <button class="btn-login" onclick="doLogin()">🔓 Entrar a cocina</button>
+    <div id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     KITCHEN PANEL
+════════════════════════════════════════════════════ -->
+<div id="kitchenScreen">
+
+  <!-- Top bar -->
+  <div class="kbar">
+    <div class="kbar-left">
+      <img class="kbar-logo"
+           src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg"
+           alt="Logo" />
+      <div>
+        <div class="kbar-title">Río Dragón · Cocina</div>
+        <div class="kbar-sub" id="kbarDate"></div>
+      </div>
+    </div>
+    <div class="kbar-right">
+      <div class="live-dot"><span class="dot"></span>EN VIVO</div>
+      <span class="badge-pending" id="badgePending">0 pedidos</span>
+      <button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Activar/silenciar notificación">🔔</button>
+      <button class="btn-logout" onclick="doLogout()">Salir ×</button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <button class="filter-btn f-all active"       onclick="setFilter('all')">Todos</button>
+    <button class="filter-btn f-pendiente"         onclick="setFilter('pendiente')">⏳ Pendientes</button>
+    <button class="filter-btn f-cocina"            onclick="setFilter('cocina')">🔥 En cocina</button>
+    <button class="filter-btn f-camino"            onclick="setFilter('camino')">🛵 En camino</button>
+    <button class="filter-btn f-entregado"         onclick="setFilter('entregado')">✅ Entregados</button>
+  </div>
+
+  <!-- Orders -->
+  <div class="kitchen-body">
+    <div id="ordersGrid">
+      <div class="k-empty"><div class="big">🍽️</div><p>Esperando pedidos…<br>Aparecerán aquí en tiempo real.</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   ⚠️  CONFIGURACIÓN FIREBASE  ⚠️
+   Usa los MISMOS datos que en pedidos.html
+════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCukdPwczdP9f_zuiOzj4UXn6m2MRc85LM",
+  authDomain:        "riodragondelivery.firebaseapp.com",
+  databaseURL:       "https://riodragondelivery-default-rtdb.firebaseio.com",
+  projectId:         "riodragondelivery",
+  storageBucket:     "riodragondelivery.firebasestorage.app",
+  messagingSenderId: "552329862007",
+  appId:             "1:552329862007:web:6bd8b66b7d1f99390d1f72"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ─── CONFIG ────────────────────────────────────────── */
+const KITCHEN_PASSWORD = 'cocina123';
+const fmt = n => `Bs. ${Number(n).toFixed(2)}`;
+
+/* ─── STATE ─────────────────────────────────────────── */
+let allOrders    = {};   // { id: orderObj }
+let currentFilter= 'all';
+let isFirstLoad  = true;
+let soundEnabled = true;
+let unsubscribe  = null; // Firebase listener off handle
+
+/* ─── LOGIN ─────────────────────────────────────────── */
+function doLogin() {
+  const val = document.getElementById('pwdInput').value;
+  if (val !== KITCHEN_PASSWORD) {
+    document.getElementById('loginErr').textContent = '❌ Contraseña incorrecta';
+    document.getElementById('pwdInput').value = '';
+    return;
+  }
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('kitchenScreen').style.display = 'block';
+  document.getElementById('kbarDate').textContent = new Date().toLocaleDateString('es-BO', { weekday:'long', day:'numeric', month:'long' });
+  startListening();
+}
+function doLogout() {
+  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  allOrders = {}; isFirstLoad = true;
+  document.getElementById('kitchenScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display   = 'flex';
+  document.getElementById('pwdInput').value = '';
+  document.getElementById('loginErr').textContent = '';
+}
+
+/* ─── FIREBASE LISTENER ─────────────────────────────── */
+function startListening() {
+  const ref = db.ref('orders');
+
+  // onValue fires immediately with ALL data, then on each change
+  const handler = ref.on('value', snap => {
+    const data = snap.val() || {};
+
+    if (!isFirstLoad) {
+      // Detect newly added orders
+      Object.keys(data).forEach(id => {
+        if (!allOrders[id]) {
+          showToast(`🔔 Nuevo pedido #${id}`);
+          playBeep();
+        }
+      });
+    }
+
+    allOrders = data;
+    isFirstLoad = false;
+    renderOrders();
+  });
+
+  // Store off reference to detach on logout
+  unsubscribe = () => ref.off('value', handler);
+}
+
+/* ─── FILTER ────────────────────────────────────────── */
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.f-${f === 'all' ? 'all' : f}`).classList.add('active');
+  renderOrders();
+}
+
+/* ─── RENDER ────────────────────────────────────────── */
+function renderOrders() {
+  const grid = document.getElementById('ordersGrid');
+
+  let orders = Object.values(allOrders);
+  // Sort: newest first
+  orders.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+
+  // Filter
+  if (currentFilter !== 'all') orders = orders.filter(o => o.status === currentFilter);
+
+  // Badge
+  const pending = Object.values(allOrders).filter(o => o.status !== 'entregado').length;
+  document.getElementById('badgePending').textContent = `${pending} pendiente${pending!==1?'s':''}`;
+
+  if (!orders.length) {
+    grid.innerHTML = `<div class="k-empty"><div class="big">🍽️</div><p>${currentFilter==='all' ? 'Esperando pedidos…' : 'Sin pedidos en esta categoría'}</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = orders.map(o => buildCard(o)).join('');
+
+  // Update timers
+  updateTimers();
+}
+
+function buildCard(o) {
+  const pillMap = {
+    pendiente:'pill-pendiente', aceptado:'pill-cocina',
+    cocina:'pill-cocina', camino:'pill-camino', entregado:'pill-entregado'
+  };
+  const pillLbl = {
+    pendiente:'⏳ Pendiente', aceptado:'👍 Aceptado',
+    cocina:'🔥 En cocina', camino:'🛵 En camino', entregado:'✅ Entregado'
+  };
+  const isQR = o.metodoPago === 'QR Banco Económico';
+
+  const itemsHtml = o.items.map(it =>
+    `<div class="item-row">
+       <span><span class="item-qty">${it.qty}×</span>${it.name}</span>
+       <span>${fmt(it.price * it.qty)}</span>
+     </div>`
+  ).join('');
+
+  const minutesAgo = o.timestamp ? Math.floor((Date.now() - o.timestamp) / 60000) : null;
+  const timerClass = minutesAgo !== null && minutesAgo > 30 ? 'urgent' : '';
+  const timerText  = minutesAgo !== null ? (minutesAgo < 1 ? 'Hace un momento' : `Hace ${minutesAgo} min`) : o.date;
+  const deliveryInfo = o.km ? `🛵 ${o.km.toFixed(1)} km${o.rain ? ' · 🌧️' : ''}` : '🛵 Delivery';
+
+  // Build action buttons
+  const btnsHtml = `
+    ${isQR && !o.pagoVerificado ? `
+    <button class="act-btn verificar" style="grid-column:1/-1"
+            onclick="verifyPayment('${o.id}')">✅ Verificar pago QR</button>` : ''}
+    <button class="act-btn aceptado ${o.status==='aceptado'?'active':''}"
+            onclick="updateStatus('${o.id}','aceptado')">👍 Aceptar</button>
+    <button class="act-btn cocina ${o.status==='cocina'?'active':''}"
+            onclick="updateStatus('${o.id}','cocina')">🔥 En cocina</button>
+    <button class="act-btn camino ${o.status==='camino'?'active':''}"
+            onclick="updateStatus('${o.id}','camino')">🛵 En camino</button>
+    <button class="act-btn entregado ${o.status==='entregado'?'active':''}"
+            onclick="updateStatus('${o.id}','entregado')">✅ Entregado</button>`;
+
+  return `
+    <div class="order-card s-${o.status}" id="card-${o.id}">
+      <div class="card-head">
+        <div>
+          <div class="card-num">Pedido #${o.id}</div>
+          <div class="card-time" data-ts="${o.timestamp||''}">${timerText}</div>
+        </div>
+        <span class="pill ${pillMap[o.status]||'pill-pendiente'}">${pillLbl[o.status]||'Pendiente'}</span>
+      </div>
+
+      <div class="card-items">${itemsHtml}</div>
+
+      <div class="card-customer">
+        <strong>👤 ${o.customer.name}</strong>
+        📍 ${o.customer.address}
+        ${o.customer.ref ? `<br>🗺️ ${o.customer.ref}` : ''}
+        <br><span class="phone-badge">📞 ${o.customer.phone}</span>
+      </div>
+
+      <!-- Método de pago -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <span style="font-size:.8rem;color:rgba(255,255,255,.4)">Pago</span>
+        <span style="font-size:.8rem;font-weight:700;padding:3px 12px;border-radius:20px;${o.pagoVerificado||!isQR ? 'background:rgba(39,174,96,.2);color:#2ecc71' : 'background:rgba(212,172,13,.2);color:var(--gold)'}">
+          ${isQR ? '📱 QR Banco Económico' : '💵 Efectivo'}
+          ${isQR ? (o.pagoVerificado ? ' ✅ Verificado' : ' ⏳ Pendiente verificación') : ' · Cobrar al entregar'}
+        </span>
+      </div>
+
+      <!-- Comprobante -->
+      ${o.comprobante ? `
+      <div style="margin-bottom:12px">
+        <p style="font-size:.73rem;color:rgba(255,255,255,.35);margin-bottom:6px">📎 Comprobante:</p>
+        <img src="${o.comprobante}"
+             style="width:100%;max-height:160px;object-fit:contain;border-radius:10px;border:1px solid rgba(39,174,96,.5);cursor:pointer"
+             onclick="this.style.maxHeight=this.style.maxHeight==='none'?'160px':'none'"
+             title="Toca para ampliar" />
+      </div>` : ''}
+
+      <div class="card-totals">
+        <span>${deliveryInfo}</span>
+        <span>${fmt(o.delivery||0)}</span>
+      </div>
+      <div class="card-grand">
+        <span>Total del pedido</span>
+        <span>${fmt(o.total)}</span>
+      </div>
+
+      <div class="card-actions">${btnsHtml}</div>
+      <div class="card-timer ${timerClass}" data-id="${o.id}">${timerText}</div>
+    </div>`;
+}
+
+/* ─── STATUS UPDATE → FIREBASE ──────────────────────── */
+async function updateStatus(id, status) {
+  try {
+    await db.ref(`orders/${id}/status`).set(status);
+  } catch(e) {
+    alert('Error al actualizar estado. Verifica conexión.');
+  }
+}
+
+async function verifyPayment(id) {
+  try {
+    await db.ref(`orders/${id}`).update({ pagoVerificado: true, status: 'aceptado' });
+    showToast(`✅ Pago verificado · Pedido #${id} aceptado`);
+  } catch(e) {
+    alert('Error al verificar pago.');
+  }
+}
+
+/* ─── LIVE TIMERS ───────────────────────────────────── */
+function updateTimers() {
+  document.querySelectorAll('[data-ts]').forEach(el => {
+    const ts = parseInt(el.dataset.ts);
+    if (!ts) return;
+    const min = Math.floor((Date.now() - ts) / 60000);
+    el.textContent = min < 1 ? 'Hace un momento' : `Hace ${min} min`;
+  });
+  document.querySelectorAll('.card-timer[data-id]').forEach(el => {
+    const id  = el.dataset.id;
+    const order = allOrders[id];
+    if (!order?.timestamp) return;
+    const min = Math.floor((Date.now() - order.timestamp) / 60000);
+    el.textContent = min < 1 ? 'Hace un momento' : `Hace ${min} min`;
+    el.className   = `card-timer ${min > 30 ? 'urgent' : ''}`;
+  });
+}
+setInterval(updateTimers, 30000); // actualiza cada 30 seg
+
+/* ─── TOAST ─────────────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ─── SOUND ─────────────────────────────────────────── */
+function playBeep() {
+  if (!soundEnabled) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Two-tone chime
+    [600, 900].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.5);
+      osc.start(ctx.currentTime + i * 0.18);
+      osc.stop(ctx.currentTime + i * 0.18 + 0.5);
+    });
+  } catch(e) { /* silent fail */ }
+}
+function toggleSound() {
+  soundEnabled = !soundEnabled;
+  document.getElementById('soundBtn').textContent = soundEnabled ? '🔔' : '🔕';
+}
+
+/* ─── KEYBOARD SHORTCUT ─────────────────────────────── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Río Dragón · Delivery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Google Maps: Distance Matrix + Places Autocomplete -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDJ4vRte2jGgRdAn8_ra7yePHPc3FWXRho&libraries=places&callback=initMaps" async defer></script>
+
+  <!-- Firebase SDK v9 compat -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --red:      #c0392b;
+      --red-dark: #922b21;
+      --gold:     #d4ac0d;
+      --ink:      #1a0a00;
+      --ink-2:    #4a2c0a;
+      --bg:       #faf7f2;
+      --white:    #ffffff;
+      --muted:    #7b6652;
+      --border:   #ede3d5;
+      --success:  #27ae60;
+      --warn:     #e67e22;
+      --shadow:   0 4px 20px rgba(26,10,0,.10);
+      --shadow-lg:0 12px 40px rgba(26,10,0,.16);
+      --font-h:   'Noto Serif SC', serif;
+      --font-b:   'DM Sans', sans-serif;
+      --nav-h:    70px;
+      --cart-w:   360px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: var(--font-b); background: var(--bg); color: var(--ink); min-height: 100vh; overflow-x: hidden; }
+    img  { display: block; max-width: 100%; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input, textarea { font-family: inherit; }
+
+    /* ─── NAV ────────────────────────────────────────────── */
+    #nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--nav-h);
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      box-shadow: 0 2px 12px rgba(26,10,0,.07);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; }
+    .logo img {
+      height: 46px; width: 46px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--gold);
+    }
+    .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .logo-text span:first-child { font-family: var(--font-h); font-size: 1.15rem; color: var(--red); font-weight: 700; }
+    .logo-text span:last-child  { font-size: .68rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+
+    #cartToggleBtn {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--red); color: #fff;
+      padding: 9px 16px; border-radius: 50px;
+      font-size: .88rem; font-weight: 600;
+      transition: background .2s, transform .1s;
+    }
+    #cartToggleBtn:hover  { background: var(--red-dark); }
+    #cartToggleBtn:active { transform: scale(.97); }
+    #cartBadge {
+      background: var(--gold); color: var(--ink);
+      font-size: .7rem; font-weight: 700;
+      min-width: 18px; height: 18px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; padding: 0 4px;
+    }
+
+    /* ─── HERO ───────────────────────────────────────────── */
+    .app-body { padding-top: var(--nav-h); min-height: 100vh; }
+    .hero {
+      background: linear-gradient(135deg, var(--red-dark) 0%, var(--red) 60%, #e74c3c 100%);
+      padding: 40px 20px 50px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '龍'; position: absolute; right: -10px; top: -20px;
+      font-size: 180px; color: rgba(255,255,255,.05);
+      font-family: var(--font-h); pointer-events: none;
+    }
+    .hero h1 { font-family: var(--font-h); font-size: clamp(1.7rem,5vw,2.4rem); color: #fff; margin-bottom: 8px; }
+    .hero p   { color: rgba(255,255,255,.8); font-size: .95rem; font-weight: 300; }
+    .hero .delivery-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; font-size: .8rem; padding: 5px 14px; border-radius: 50px; margin-top: 14px;
+    }
+
+    /* ─── MENU ───────────────────────────────────────────── */
+    .section-title {
+      font-family: var(--font-h); font-size: 1.3rem; color: var(--ink);
+      padding: 28px 20px 16px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    #menuGrid { display: block; padding-bottom: 110px; }
+    .cat-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(155px,1fr)); gap: 16px; padding: 0 16px 8px; }
+
+    .menu-card {
+      background: var(--white); border-radius: 16px; overflow: hidden;
+      box-shadow: var(--shadow); transition: transform .2s, box-shadow .2s;
+    }
+    .menu-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+    .thumb-placeholder {
+      width: 100%; aspect-ratio: 1/1;
+      background: linear-gradient(135deg,#ffeaa7,#fdcb6e);
+      display: flex; align-items: center; justify-content: center; font-size: 3.5rem;
+    }
+    .card-body { padding: 12px; }
+    .card-body h3  { font-size: .9rem; font-weight: 600; line-height: 1.25; margin-bottom: 4px; }
+    .card-body .desc { font-size: .75rem; color: var(--muted); margin-bottom: 10px; line-height: 1.35; }
+    .card-body .row { display: flex; align-items: center; justify-content: space-between; }
+    .card-body .price { font-family: var(--font-h); font-size: 1.05rem; color: var(--red); font-weight: 700; }
+    .btn-add {
+      background: var(--red); color: #fff; width: 32px; height: 32px;
+      border-radius: 50%; font-size: 1.2rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s, transform .12s; flex-shrink: 0;
+    }
+    .btn-add:hover  { background: var(--red-dark); }
+    .btn-add:active { transform: scale(.9); }
+
+    /* ─── CART DRAWER ────────────────────────────────────── */
+    #cartOverlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(26,10,0,.45); backdrop-filter: blur(2px);
+    }
+    #cartOverlay.open { display: block; }
+    #cartPanel {
+      position: fixed; top: 0; right: -100%; bottom: 0;
+      width: min(var(--cart-w),100vw);
+      background: var(--white); z-index: 201;
+      display: flex; flex-direction: column;
+      box-shadow: -8px 0 40px rgba(26,10,0,.18);
+      transition: right .3s cubic-bezier(.4,0,.2,1);
+    }
+    #cartPanel.open { right: 0; }
+
+    .cart-header {
+      padding: 18px 20px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cart-header h2 { font-family: var(--font-h); font-size: 1.15rem; }
+    .cart-close {
+      width: 34px; height: 34px; border-radius: 50%; background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; color: var(--muted); transition: background .2s;
+    }
+    .cart-close:hover { background: var(--border); }
+
+    #cartItems { flex: 1; overflow-y: auto; padding: 16px 20px; }
+    .cart-empty { text-align: center; padding: 60px 0; color: var(--muted); }
+    .cart-empty .big { font-size: 3rem; margin-bottom: 10px; }
+
+    .cart-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+    .ci-info  { flex: 1; }
+    .ci-name  { font-size: .88rem; font-weight: 600; }
+    .ci-price { font-size: .82rem; color: var(--muted); margin-top: 2px; }
+    .qty-ctrl { display: flex; align-items: center; gap: 8px; }
+    .qty-ctrl button {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .95rem; font-weight: 700; transition: border-color .2s;
+    }
+    .qty-ctrl button:hover { border-color: var(--red); color: var(--red); }
+    .qty-num  { font-weight: 700; font-size: .95rem; min-width: 20px; text-align: center; }
+    .ci-subtotal { font-family: var(--font-h); font-size: .95rem; color: var(--red); font-weight: 700; min-width: 62px; text-align: right; }
+
+    /* cart footer */
+    .cart-footer { padding: 14px 20px; border-top: 1px solid var(--border); background: var(--bg); }
+    .del-section { border-bottom: 1px dashed var(--border); padding-bottom: 10px; margin-bottom: 10px; }
+    .del-row     { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .del-label   { font-size: .82rem; color: var(--muted); }
+    .del-value   { font-weight: 700; font-size: .88rem; }
+    .del-loading { color: var(--muted); font-weight: 400; font-size: .78rem; }
+    .del-error   { color: #e74c3c; font-size: .75rem; }
+    .dist-chip   {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 20px; padding: 2px 10px; font-size: .72rem; color: var(--muted);
+    }
+    /* rain toggle */
+    .rain-row   { display: flex; align-items: center; gap: 8px; }
+    .rain-label { font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .toggle     { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .slider {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 20px; cursor: pointer; transition: background .2s;
+    }
+    .slider::before {
+      content: ''; position: absolute; left: 3px; top: 3px;
+      width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .2s;
+    }
+    .toggle input:checked + .slider { background: #3498db; }
+    .toggle input:checked + .slider::before { transform: translateX(16px); }
+
+    .subtotal-row  { display: flex; justify-content: space-between; font-size: .83rem; color: var(--muted); margin-bottom: 4px; }
+    .total-row     { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .total-label   { font-weight: 700; color: var(--ink); }
+    .total-amount  { font-family: var(--font-h); font-size: 1.4rem; color: var(--red); font-weight: 700; }
+    .btn-checkout  {
+      width: 100%; background: var(--red); color: #fff;
+      padding: 14px; border-radius: 14px; font-size: 1rem; font-weight: 700;
+      transition: background .2s;
+    }
+    .btn-checkout:hover    { background: var(--red-dark); }
+    .btn-checkout:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* ─── CHECKOUT MODAL ─────────────────────────────────── */
+    #checkoutModal {
+      display: none; position: fixed; inset: 0; z-index: 300;
+      background: rgba(26,10,0,.5); backdrop-filter: blur(4px);
+      overflow-y: auto; padding: 20px;
+    }
+    #checkoutModal.open { display: flex; align-items: flex-start; justify-content: center; }
+    .modal-box {
+      background: var(--white); border-radius: 24px;
+      width: 100%; max-width: 480px; margin: auto;
+      overflow: hidden; box-shadow: var(--shadow-lg);
+      animation: slideUp .3s ease;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:none} }
+    .modal-head {
+      background: linear-gradient(135deg, var(--red-dark), var(--red));
+      padding: 24px 24px 20px; position: relative;
+    }
+    .modal-head h2 { font-family: var(--font-h); color: #fff; font-size: 1.3rem; }
+    .modal-head p  { color: rgba(255,255,255,.75); font-size: .85rem; margin-top: 4px; }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: rgba(255,255,255,.2); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-close:hover { background: rgba(255,255,255,.35); }
+    .modal-body { padding: 24px; }
+
+    .order-summary { background: var(--bg); border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; }
+    .order-summary h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+    .os-item {
+      display: flex; justify-content: space-between;
+      font-size: .88rem; padding: 4px 0; border-bottom: 1px dashed var(--border);
+    }
+    .os-item:last-of-type { border: none; }
+    .os-total {
+      display: flex; justify-content: space-between; font-weight: 700; font-size: 1rem;
+      padding-top: 10px; margin-top: 6px; border-top: 2px solid var(--border); color: var(--red);
+    }
+
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block; font-size: .82rem; font-weight: 600; color: var(--ink-2);
+      margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em;
+    }
+    .form-group input, .form-group textarea {
+      width: 100%; border: 1.5px solid var(--border); border-radius: 10px;
+      padding: 11px 14px; font-size: .92rem; background: var(--bg);
+      outline: none; transition: border-color .2s;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: var(--red); }
+    .form-group textarea { resize: vertical; min-height: 68px; }
+
+    .btn-locate {
+      width: 100%; background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 9px 14px; font-size: .82rem; color: var(--ink-2);
+      font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: border-color .2s, background .2s; margin-bottom: 8px;
+    }
+    .btn-locate:hover    { border-color: var(--red); background: #fff5f5; color: var(--red); }
+    .btn-locate:disabled { opacity: .5; cursor: not-allowed; }
+
+    .addr-status { font-size: .75rem; color: var(--muted); margin-top: 4px; min-height: 16px; }
+
+    .btn-send {
+      width: 100%; background: var(--red); color: #fff; padding: 15px;
+      border-radius: 14px; font-size: 1rem; font-weight: 700; margin-top: 6px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background .2s;
+    }
+    .btn-send:hover { background: var(--red-dark); }
+
+    /* ─── SUCCESS ────────────────────────────────────────── */
+    #successScreen {
+      display: none; min-height: 100vh;
+      align-items: center; justify-content: center; flex-direction: column;
+      text-align: center; padding: 40px 20px; background: var(--bg);
+    }
+    #successScreen.show { display: flex; }
+    .success-icon { font-size: 5rem; margin-bottom: 16px; animation: pop .5s ease; }
+    @keyframes pop { 0%{transform:scale(0)} 70%{transform:scale(1.15)} 100%{transform:scale(1)} }
+    #successScreen h2 { font-family: var(--font-h); font-size: 1.7rem; margin-bottom: 8px; }
+    #successScreen p  { color: var(--muted); font-size: .95rem; max-width: 320px; line-height: 1.55; }
+    #orderNumTag {
+      background: var(--red); color: #fff; font-family: var(--font-h);
+      font-size: 1.3rem; padding: 10px 28px; border-radius: 50px; margin: 18px 0;
+    }
+    .btn-again {
+      margin-top: 10px; border: 2px solid var(--red); color: var(--red);
+      padding: 12px 32px; border-radius: 50px; font-weight: 700; transition: background .2s, color .2s;
+    }
+    .btn-again:hover { background: var(--red); color: #fff; }
+
+    /* ─── MISC ───────────────────────────────────────────── */
+    /* ── Payment method ─────────────────────────────────── */
+    .pay-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pay-btn {
+      padding: 13px 8px; border-radius: 12px;
+      border: 2px solid var(--border);
+      font-size: .85rem; font-weight: 600; color: var(--muted);
+      background: var(--bg); transition: all .2s; text-align: center;
+    }
+    .pay-btn.active {
+      border-color: var(--red); color: var(--red);
+      background: #fff5f5;
+    }
+    .qr-box {
+      background: var(--bg); border-radius: 16px;
+      border: 2px solid var(--gold);
+      padding: 18px 16px; text-align: center; margin-bottom: 4px;
+    }
+    .qr-title  { font-weight: 700; font-size: .85rem; color: var(--ink-2); margin-bottom: 12px; }
+    .qr-amount { font-size: .9rem; color: var(--muted); margin-bottom: 8px; }
+    .qr-amount strong { color: var(--red); font-family: var(--font-h); font-size: 1.1rem; }
+    .qr-hint   { font-size: .75rem; color: var(--muted); line-height: 1.7; }
+    .upload-area {
+      border: 2px dashed var(--border); border-radius: 12px;
+      padding: 20px; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+      min-height: 100px; display: flex; align-items: center; justify-content: center;
+    }
+    .upload-area:hover { border-color: var(--red); background: #fff5f5; }
+    .upload-area p { font-size: .8rem; color: var(--muted); margin-top: 6px; }
+
+    .pac-container { z-index: 99999 !important; font-family: var(--font-b) !important; }
+
+    /* ─── TRACKING SCREEN ────────────────────────────────── */
+    #successScreen {
+      display: none; min-height: 100vh;
+      flex-direction: column; align-items: center;
+      padding: 0 0 60px; background: var(--bg);
+    }
+    #successScreen.show { display: flex; }
+    .track-header {
+      width: 100%; background: linear-gradient(135deg, var(--red-dark), var(--red));
+      padding: 50px 24px 24px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .track-logo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.4); flex-shrink: 0; }
+    .track-title { font-family: var(--font-h); color: #fff; font-size: 1.15rem; font-weight: 700; }
+    .track-num   { color: rgba(255,255,255,.7); font-size: .82rem; margin-top: 2px; }
+    .track-status-box {
+      width: calc(100% - 48px); background: var(--white); border-radius: 20px;
+      padding: 24px 20px; text-align: center; box-shadow: var(--shadow-lg);
+      margin: -20px 24px 20px; position: relative; z-index: 2;
+    }
+    .track-status-icon { font-size: 3rem; margin-bottom: 8px; }
+    .track-status-text { font-family: var(--font-h); font-size: 1.2rem; color: var(--ink); font-weight: 700; margin-bottom: 4px; }
+    .track-status-sub  { font-size: .83rem; color: var(--muted); }
+    .track-steps {
+      width: calc(100% - 48px); background: var(--white); border-radius: 20px;
+      padding: 20px; margin: 0 24px 16px; box-shadow: var(--shadow);
+    }
+    .track-step { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; position: relative; }
+    .track-step:not(:last-child)::after {
+      content: ''; position: absolute; left: 17px; top: 44px;
+      width: 2px; height: calc(100% - 8px); background: var(--border);
+    }
+    .track-step.done::after   { background: var(--success); }
+    .track-step.active::after { background: linear-gradient(var(--success), var(--border)); }
+    .step-dot {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; font-size: 1rem; border: 2px solid var(--border);
+      background: var(--bg); z-index: 1; transition: all .4s;
+    }
+    .track-step.done   .step-dot { background: var(--success); border-color: var(--success); }
+    .track-step.active .step-dot { background: var(--red); border-color: var(--red); animation: stepPulse 1.5s ease infinite; }
+    @keyframes stepPulse { 0%,100%{box-shadow:0 0 0 4px rgba(192,57,43,.15)} 50%{box-shadow:0 0 0 8px rgba(192,57,43,.04)} }
+    .step-info   { flex: 1; padding-top: 6px; }
+    .step-label  { font-size: .9rem; font-weight: 600; color: var(--muted); transition: color .3s; }
+    .track-step.done   .step-label { color: var(--success); }
+    .track-step.active .step-label { color: var(--red); font-weight: 700; }
+    .step-time   { font-size: .73rem; color: var(--muted); margin-top: 2px; }
+    .track-summary {
+      width: calc(100% - 48px); background: var(--white); border-radius: 20px;
+      padding: 16px 20px; margin: 0 24px 20px; box-shadow: var(--shadow); font-size: .85rem;
+    }
+    .track-summary h4 { font-size: .73rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 10px; }
+    .ts-row   { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); color: var(--ink); }
+    .ts-row:last-of-type { border: none; }
+    .ts-total { display: flex; justify-content: space-between; font-weight: 700; color: var(--red); padding-top: 8px; margin-top: 4px; border-top: 2px solid var(--border); font-family: var(--font-h); }
+    .btn-again {
+      margin: 0 24px; width: calc(100% - 48px);
+      border: 2px solid var(--red); color: var(--red);
+      padding: 13px; border-radius: 50px; font-weight: 700;
+      transition: background .2s, color .2s; text-align: center;
+    }
+    .btn-again:hover { background: var(--red); color: #fff; }
+
+    #cartItems::-webkit-scrollbar { width: 4px; }
+    #cartItems::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    @media (max-width: 480px) {
+      .cat-grid { grid-template-columns: repeat(2,1fr); gap: 12px; padding: 0 12px 8px; }
+      .modal-body { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="logo">
+    <img src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg" alt="Logo Río Dragón" />
+    <div class="logo-text">
+      <span>Río Dragón</span>
+      <span>Chifa · Delivery</span>
+    </div>
+  </div>
+  <button id="cartToggleBtn" onclick="toggleCart()">
+    <span>🛒</span>
+    <span id="cartTotalNav">Bs. 0.00</span>
+    <span id="cartBadge">0</span>
+  </button>
+</nav>
+
+<!-- ── APP BODY ─────────────────────────────────────────── -->
+<div class="app-body" id="appBody">
+  <div class="hero">
+    <h1>Río Dragón 🐉</h1>
+    <p>Auténtica comida chifa · Directo a tu puerta</p>
+    <span class="delivery-badge">🛵 Entrega 30–45 min</span>
+  </div>
+  <div id="menuGrid"></div>
+</div>
+
+<!-- ── TRACKING SCREEN ──────────────────────────────────── -->
+<div id="successScreen">
+
+  <!-- Header -->
+  <div class="track-header">
+    <img src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg" alt="Logo" class="track-logo" />
+    <div>
+      <div class="track-title">Río Dragón 🐉</div>
+      <div id="orderNumTag" class="track-num"></div>
+    </div>
+  </div>
+
+  <!-- Status headline -->
+  <div class="track-status-box">
+    <div class="track-status-icon" id="trackIcon">🎉</div>
+    <div class="track-status-text" id="trackStatusText">¡Pedido recibido!</div>
+    <div class="track-status-sub"  id="trackStatusSub">Estamos revisando tu pedido...</div>
+  </div>
+
+  <!-- Steps timeline -->
+  <div class="track-steps" id="trackSteps">
+    <!-- rendered by JS -->
+  </div>
+
+  <!-- Order summary mini -->
+  <div class="track-summary" id="trackSummary"></div>
+
+  <button class="btn-again" onclick="goBack()">← Hacer otro pedido</button>
+</div>
+
+<!-- ── CART DRAWER ──────────────────────────────────────── -->
+<div id="cartOverlay" onclick="toggleCart()"></div>
+<aside id="cartPanel">
+  <div class="cart-header">
+    <h2>🛒 Mi Carrito</h2>
+    <button class="cart-close" onclick="toggleCart()">✕</button>
+  </div>
+  <div id="cartItems">
+    <div class="cart-empty">
+      <div class="big">🥢</div>
+      <p>Tu carrito está vacío</p>
+    </div>
+  </div>
+  <div class="cart-footer">
+    <div class="del-section" id="delSection" style="display:none">
+      <div class="del-row">
+        <span class="del-label">🛵 Costo de envío</span>
+        <span id="delCostDisplay" class="del-value del-loading">—</span>
+      </div>
+      <div id="delChipRow" style="display:none;align-items:center;justify-content:space-between;margin-top:4px">
+        <span class="dist-chip" id="distChip">📍 —</span>
+        <label class="rain-label">
+          <span class="toggle"><input type="checkbox" id="rainToggle" onchange="onRainToggle()"><span class="slider"></span></span>
+          🌧️ Lluvia
+        </label>
+      </div>
+    </div>
+    <div class="subtotal-row" id="subtotalRow" style="display:none">
+      <span>Subtotal productos</span>
+      <span id="cartSubtotal">Bs. 0.00</span>
+    </div>
+    <div class="total-row">
+      <span class="total-label">Total</span>
+      <span class="total-amount" id="cartTotal">Bs. 0.00</span>
+    </div>
+    <button class="btn-checkout" id="btnCheckout" onclick="openCheckout()" disabled>
+      Finalizar pedido →
+    </button>
+  </div>
+</aside>
+
+<!-- ── CHECKOUT MODAL ───────────────────────────────────── -->
+<div id="checkoutModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Finalizar pedido</h2>
+      <p>Completa tus datos para la entrega</p>
+      <button class="modal-close" onclick="closeCheckout()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="order-summary">
+        <h3>Resumen</h3>
+        <div id="modalSummary"></div>
+        <div class="os-item">
+          <span>🛵 Delivery</span>
+          <span id="modalDelivery">Bs. 0.00</span>
+        </div>
+        <div class="os-total">
+          <span>Total</span>
+          <span id="modalTotal">Bs. 0.00</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Dirección de entrega</label>
+        <button class="btn-locate" id="btnLocate" onclick="requestGPS()">📍 Usar mi ubicación GPS</button>
+        <input type="text" id="fAddress" placeholder="Escribe tu dirección o usa GPS…" autocomplete="off" />
+        <div class="addr-status" id="addrStatus"></div>
+      </div>
+      <div class="form-group">
+        <label>Referencia</label>
+        <input type="text" id="fRef" placeholder="Frente al parque, puerta roja…" />
+      </div>
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input type="text" id="fName" placeholder="Ej: María López" />
+      </div>
+      <div class="form-group">
+        <label>Teléfono / WhatsApp</label>
+        <input type="tel" id="fPhone" placeholder="78901234" />
+      </div>
+
+      <!-- ── MÉTODO DE PAGO ── -->
+      <div class="form-group">
+        <label>Método de pago</label>
+        <div class="pay-options">
+          <button type="button" class="pay-btn active" id="payEfectivo" onclick="selectPay('efectivo')">
+            💵 Efectivo
+          </button>
+          <button type="button" class="pay-btn" id="payQR" onclick="selectPay('qr')">
+            📱 QR Banco Económico
+          </button>
+        </div>
+      </div>
+
+      <!-- ── QR PANEL ── -->
+      <div id="qrPanel" style="display:none">
+        <div class="qr-box">
+          <p class="qr-title">🏦 Banco Económico · Pago por QR</p>
+          <img src="https://i.imgur.com/Uif6wpU.jpeg"
+               id="qrImg"
+               alt="QR Banco Económico"
+               style="width:220px;height:220px;object-fit:contain;border-radius:12px;border:3px solid var(--gold);display:block;margin:0 auto 10px" />
+          <p class="qr-amount">Total a pagar: <strong id="qrAmount">Bs. 0.00</strong></p>
+          <p class="qr-hint">1. Escanea el QR con tu app bancaria<br>2. Realiza el pago<br>3. Sube la captura de pantalla abajo</p>
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label>📎 Comprobante de pago</label>
+          <div class="upload-area" id="uploadArea" onclick="document.getElementById('comprobanteInput').click()">
+            <div id="uploadPlaceholder">
+              <span style="font-size:2rem">📸</span>
+              <p>Toca para subir captura del comprobante</p>
+            </div>
+            <img id="comprobantePreview" style="display:none;width:100%;border-radius:10px;max-height:200px;object-fit:contain" />
+          </div>
+          <input type="file" id="comprobanteInput" accept="image/*" style="display:none" onchange="previewComprobante(this)" />
+          <div id="comprobanteStatus" style="font-size:.75rem;color:var(--muted);margin-top:6px"></div>
+        </div>
+      </div>
+
+      <button class="btn-send" id="btnSend" onclick="submitOrder()">🐉 Confirmar y enviar pedido</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   ⚠️  CONFIGURACIÓN FIREBASE  ⚠️
+   Reemplaza los valores con los de tu proyecto Firebase
+   (Consola Firebase → Configuración del proyecto → Tu app web)
+════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyCukdPwczdP9f_zuiOzj4UXn6m2MRc85LM",
+  authDomain:        "riodragondelivery.firebaseapp.com",
+  databaseURL:       "https://riodragondelivery-default-rtdb.firebaseio.com",
+  projectId:         "riodragondelivery",
+  storageBucket:     "riodragondelivery.firebasestorage.app",
+  messagingSenderId: "552329862007",
+  appId:             "1:552329862007:web:6bd8b66b7d1f99390d1f72"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+/* ─── MENÚ DATA ────────────────────────────────────────── */
+const CATEGORIES = [
+  { key:'entradas',   label:'Entradas',           emoji:'🥟' },
+  { key:'chaufa',     label:'Arroces Chaufa',      emoji:'🍚' },
+  { key:'tallarin',   label:'Tallarín Oriental',   emoji:'🍜' },
+  { key:'pollo',      label:'Platos de Pollo',     emoji:'🍗' },
+  { key:'chancho',    label:'Platos de Chancho',   emoji:'🥩' },
+  { key:'sopas',      label:'Sopas',               emoji:'🍲' },
+  { key:'criollos',   label:'Platos Criollos',     emoji:'🥘' },
+  { key:'guarnicion', label:'Guarniciones',        emoji:'🍟' },
+];
+const MENU = [
+  { id: 1, cat:'entradas',   name:'Wantán',                   desc:'Wantán frito crujiente',                     price: 40, emoji:'🥟' },
+  { id: 2, cat:'entradas',   name:'Rollitos Dragón',          desc:'Rollitos crujientes al estilo chifa',        price: 40, emoji:'🌯' },
+  { id: 3, cat:'entradas',   name:'Siu Mai',                  desc:'Dim sum de cerdo y gambas al vapor',         price: 45, emoji:'🥟' },
+  { id: 4, cat:'chaufa',     name:'Chaufa de Pollo',          desc:'Arroz salteado al wok con pollo y sillao',   price: 68, emoji:'🍚' },
+  { id: 5, cat:'chaufa',     name:'Chaufa de Res',            desc:'Arroz salteado con tiras de res al wok',     price: 83, emoji:'🍚' },
+  { id: 6, cat:'chaufa',     name:'Chaufa de Chancho',        desc:'Arroz chaufa con cerdo caramelizado',        price: 72, emoji:'🍚' },
+  { id: 7, cat:'chaufa',     name:'Chaufa Especial',          desc:'Mezcla de carnes salteadas con arroz',       price: 83, emoji:'🍚' },
+  { id: 8, cat:'chaufa',     name:'Chaufa de Langostinos',    desc:'Langostinos salteados con arroz al wok',     price:127, emoji:'🦐' },
+  { id: 9, cat:'chaufa',     name:'Chaufa de Mariscos',       desc:'Mix de mariscos frescos con arroz chaufa',   price:107, emoji:'🦞' },
+  { id:10, cat:'chaufa',     name:'Aeropuerto',               desc:'Chaufa mixto con tallarín salteado',         price: 82, emoji:'✈️' },
+  { id:11, cat:'tallarin',   name:'Tallarín de Carne',        desc:'Fideos wok con carne de res y verduras',     price: 99, emoji:'🍜' },
+  { id:12, cat:'tallarin',   name:'Tallarín de Pollo',        desc:'Fideos salteados con pollo y sillao',        price: 79, emoji:'🍜' },
+  { id:13, cat:'tallarin',   name:'Tallarín de Chancho',      desc:'Fideos orientales con cerdo salteado',       price: 84, emoji:'🍜' },
+  { id:14, cat:'tallarin',   name:'Tallarín de Langostino',   desc:'Fideos wok con langostinos frescos',         price:127, emoji:'🦐' },
+  { id:15, cat:'tallarin',   name:'Tallarín Especial',        desc:'Tallarín oriental mix de carnes',            price: 97, emoji:'🍜' },
+  { id:16, cat:'tallarin',   name:'Shangai',                  desc:'Tallarín shangai estilo tradicional',        price:110, emoji:'🍜' },
+  { id:17, cat:'pollo',      name:'Pollo Tamarindo',          desc:'Pollo crujiente en salsa de tamarindo',      price: 80, emoji:'🍗' },
+  { id:18, cat:'pollo',      name:'Pollo Piña',               desc:'Pollo agridulce con trozos de piña',         price: 84, emoji:'🍍' },
+  { id:19, cat:'pollo',      name:'Pollo Ostión',             desc:'Pollo en salsa de ostión con verduras',      price: 84, emoji:'🍗' },
+  { id:20, cat:'pollo',      name:'Pollo Champiñones',        desc:'Pollo salteado con champiñones y salsa',     price: 87, emoji:'🍄' },
+  { id:21, cat:'pollo',      name:'Pollo Verduras',           desc:'Pollo salteado con verduras chinas al wok',  price: 80, emoji:'🥦' },
+  { id:22, cat:'pollo',      name:'Limón Kay',                desc:'Pollo crujiente en salsa de limón',          price: 99, emoji:'🍋' },
+  { id:23, cat:'pollo',      name:'Chi Jau Kay',              desc:'Pollo a la cantonesa en salsa negra',        price: 99, emoji:'🍗' },
+  { id:24, cat:'pollo',      name:'Kam Lu Wantán',            desc:'Wantán con pollo en salsa agridulce',        price: 97, emoji:'🥟' },
+  { id:25, cat:'pollo',      name:'Carne con Verduras',       desc:'Pollo y verduras salteadas estilo chifa',    price: 95, emoji:'🥦' },
+  { id:26, cat:'pollo',      name:'40-40',                    desc:'Pollo frito estilo 40-40 con salsas',        price:112, emoji:'🍗' },
+  { id:27, cat:'chancho',    name:'Chancho Tamarindo',        desc:'Chancho en salsa de tamarindo caramelizada', price: 90, emoji:'🥩' },
+  { id:28, cat:'chancho',    name:'Chancho Piña',             desc:'Cerdo agridulce con piña tropical',          price: 94, emoji:'🍍' },
+  { id:29, cat:'chancho',    name:'Chancho al Ajo',           desc:'Chancho frito con salsa de ajo dorado',      price: 95, emoji:'🧄' },
+  { id:30, cat:'chancho',    name:'Chancho con Verduras',     desc:'Cerdo salteado con verduras al wok',         price: 90, emoji:'🥦' },
+  { id:31, cat:'sopas',      name:'Sopa Wantán',              desc:'Caldo con wantanes rellenos de cerdo',       price: 44, emoji:'🍲' },
+  { id:32, cat:'sopas',      name:'Sopa Fideo Chino',         desc:'Caldo con fideos chinos y verduras',         price: 40, emoji:'🍲' },
+  { id:33, cat:'sopas',      name:'Caldo de Pollo',           desc:'Caldo reconfortante de pollo casero',        price: 40, emoji:'🍲' },
+  { id:34, cat:'sopas',      name:'Fuchifu',                  desc:'Sopa tradicional chifa con tofu',            price: 40, emoji:'🍲' },
+  { id:35, cat:'sopas',      name:'Sopa Kamen',               desc:'Sopa kamen estilo chifa con fideos',         price: 66, emoji:'🍜' },
+  { id:36, cat:'sopas',      name:'Sopa 7 Sabores',           desc:'Sopa especial con siete ingredientes',       price: 65, emoji:'🌟' },
+  { id:37, cat:'criollos',   name:'Lomo Saltado',             desc:'Clásico lomo saltado con papas y arroz',     price:110, emoji:'🥘' },
+  { id:38, cat:'criollos',   name:'Tallarín Criollo de Carne',desc:'Tallarín criollo con carne',                price: 99, emoji:'🍝' },
+  { id:39, cat:'criollos',   name:'Tallarín Criollo de Pollo',desc:'Tallarín criollo salteado con pollo',       price: 75, emoji:'🍝' },
+  { id:40, cat:'guarnicion', name:'Papa Frita',               desc:'Papas fritas crocantes',                     price: 20, emoji:'🍟' },
+  { id:41, cat:'guarnicion', name:'Guarnición Chaufa',        desc:'Porción de arroz chaufa de acompañamiento',  price: 30, emoji:'🍚' },
+  { id:42, cat:'guarnicion', name:'Arroz Blanco',             desc:'Porción de arroz blanco cocido',             price: 20, emoji:'🍚' },
+];
+
+/* ─── TARIFARIO DELIVERY ───────────────────────────────── */
+const TARIFF = {1:10,2:10,3:12,4:14,5:16,6:18,7:21,8:24,9:27,10:30,11:32,12:34,13:36,14:38,15:40};
+const ORIGIN = 'Dc. Bernardo Cadario 273, Equipetrol, Santa Cruz, Bolivia';
+
+function calcDeliveryCost(km, rain) {
+  const r = Math.ceil(km);
+  const base = r <= 15 ? TARIFF[Math.max(1,r)] : 40 + (r-15)*3;
+  return rain ? base + (km <= 5 ? 3 : 5) : base;
+}
+
+/* ─── STATE ─────────────────────────────────────────────── */
+let cart         = [];
+let deliveryCost = 0;
+let deliveryKm   = 0;
+let isRaining    = false;
+let mapsReady    = false;
+let autocomplete = null;
+
+const fmt       = n => `Bs. ${n.toFixed(2)}`;
+const cartTotal = () => cart.reduce((s,c) => s + c.price*c.qty, 0);
+const cartCount = () => cart.reduce((s,c) => s + c.qty, 0);
+
+/* ─── MAPS INIT ─────────────────────────────────────────── */
+function initMaps() { mapsReady = true; initAutocomplete(); }
+function initAutocomplete() {
+  if (!mapsReady) return;
+  const input = document.getElementById('fAddress');
+  if (!input || autocomplete) return;
+  autocomplete = new google.maps.places.Autocomplete(input, {
+    componentRestrictions: { country: 'BO' },
+    fields: ['geometry','formatted_address'], types: ['geocode']
+  });
+  autocomplete.addListener('place_changed', () => {
+    const p = autocomplete.getPlace();
+    if (!p.geometry) return;
+    setClientLoc(p.geometry.location.lat(), p.geometry.location.lng(), p.formatted_address);
+  });
+}
+
+/* ─── GPS ───────────────────────────────────────────────── */
+function requestGPS() {
+  const btn = document.getElementById('btnLocate');
+  const st  = document.getElementById('addrStatus');
+  if (!navigator.geolocation) { st.textContent = '⚠️ Sin soporte GPS'; return; }
+  btn.disabled = true; btn.textContent = '📡 Obteniendo ubicación…';
+  navigator.geolocation.getCurrentPosition(
+    pos => { btn.disabled = false; btn.innerHTML = '📍 Usar mi ubicación GPS'; setClientLoc(pos.coords.latitude, pos.coords.longitude, null); },
+    ()  => { btn.disabled = false; btn.innerHTML = '📍 Usar mi ubicación GPS'; document.getElementById('addrStatus').textContent = '⚠️ No se pudo obtener GPS. Escribe tu dirección.'; },
+    { timeout: 10000 }
+  );
+}
+
+function setClientLoc(lat, lng, address) {
+  if (address) {
+    document.getElementById('fAddress').value = address;
+    document.getElementById('addrStatus').textContent = '';
+  } else if (mapsReady) {
+    new google.maps.Geocoder().geocode({ location:{lat,lng} }, (res, st) => {
+      if (st==='OK' && res[0]) {
+        document.getElementById('fAddress').value = res[0].formatted_address;
+        document.getElementById('addrStatus').textContent = '✅ Ubicación detectada';
+      }
+    });
+  }
+  calcRoute(lat, lng);
+}
+
+function calcRoute(lat, lng) {
+  document.getElementById('addrStatus').textContent = '🔄 Calculando ruta…';
+  setDelLoading();
+  if (!mapsReady) { setDelError('Google Maps no disponible'); return; }
+  new google.maps.DistanceMatrixService().getDistanceMatrix({
+    origins: [ORIGIN],
+    destinations: [new google.maps.LatLng(lat, lng)],
+    travelMode: google.maps.TravelMode.DRIVING,
+    unitSystem: google.maps.UnitSystem.METRIC,
+  }, (res, st) => {
+    if (st !== 'OK' || res.rows[0].elements[0].status !== 'OK') {
+      setDelError('Sin cobertura en esa zona');
+      document.getElementById('addrStatus').textContent = '⚠️ Fuera de cobertura';
+      return;
+    }
+    const el = res.rows[0].elements[0];
+    deliveryKm   = el.distance.value / 1000;
+    deliveryCost = calcDeliveryCost(deliveryKm, isRaining);
+    document.getElementById('addrStatus').textContent = `✅ ${el.distance.text} · ${el.duration.text} en moto`;
+    updateDelDisplays();
+  });
+}
+
+function onRainToggle() {
+  isRaining = document.getElementById('rainToggle').checked;
+  if (deliveryKm > 0) { deliveryCost = calcDeliveryCost(deliveryKm, isRaining); updateDelDisplays(); }
+}
+
+function setDelLoading() {
+  const el = document.getElementById('delCostDisplay');
+  if (el) { el.className = 'del-value del-loading'; el.textContent = 'Calculando…'; }
+  document.getElementById('delSection').style.display = '';
+  document.getElementById('subtotalRow').style.display = '';
+}
+function setDelError(msg) {
+  const el = document.getElementById('delCostDisplay');
+  if (el) { el.className = 'del-value del-error'; el.textContent = msg; }
+  deliveryCost = 0; deliveryKm = 0; updateDelDisplays();
+}
+function updateDelDisplays() {
+  const sub = cartTotal();
+  const el = document.getElementById('delCostDisplay');
+  if (el) { el.className = 'del-value'; el.textContent = fmt(deliveryCost); }
+  const chipRow = document.getElementById('delChipRow');
+  if (chipRow && deliveryKm > 0) {
+    chipRow.style.display = 'flex';
+    document.getElementById('distChip').textContent = `📍 ${deliveryKm.toFixed(1)} km por ruta`;
+  }
+  const subEl = document.getElementById('cartSubtotal');
+  if (subEl) subEl.textContent = fmt(sub);
+  document.getElementById('subtotalRow').style.display = deliveryCost > 0 ? '' : 'none';
+  document.getElementById('cartTotal').textContent    = fmt(sub + deliveryCost);
+  document.getElementById('cartTotalNav').textContent = fmt(sub + deliveryCost);
+  const md = document.getElementById('modalDelivery');
+  const mt = document.getElementById('modalTotal');
+  if (md) md.textContent = fmt(deliveryCost);
+  if (mt) mt.textContent = fmt(sub + deliveryCost);
+}
+
+/* ─── MENU RENDER ───────────────────────────────────────── */
+function renderMenu() {
+  const el = document.getElementById('menuGrid');
+  el.innerHTML = CATEGORIES.map(cat => {
+    const items = MENU.filter(m => m.cat === cat.key);
+    if (!items.length) return '';
+    return `<div class="section-title">${cat.emoji} ${cat.label}</div>
+    <div class="cat-grid">
+      ${items.map(item => `
+        <div class="menu-card">
+          <div class="thumb-placeholder">${item.emoji}</div>
+          <div class="card-body">
+            <h3>${item.name}</h3>
+            <p class="desc">${item.desc}</p>
+            <div class="row">
+              <span class="price">${fmt(item.price)}</span>
+              <button class="btn-add" onclick="addToCart(${item.id})">+</button>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+/* ─── CART ──────────────────────────────────────────────── */
+function addToCart(id) {
+  const item = MENU.find(m => m.id === id);
+  const ex   = cart.find(c => c.id === id);
+  ex ? ex.qty++ : cart.push({ id:item.id, name:item.name, price:item.price, qty:1 });
+  renderCart(); openCart();
+}
+function removeFromCart(id) {
+  const i = cart.findIndex(c => c.id === id);
+  if (i === -1) return;
+  cart[i].qty--;
+  if (cart[i].qty <= 0) cart.splice(i,1);
+  renderCart();
+}
+function renderCart() {
+  const sub   = cartTotal();
+  const count = cartCount();
+  document.getElementById('cartBadge').textContent    = count;
+  document.getElementById('cartTotalNav').textContent = fmt(sub);
+  document.getElementById('cartTotal').textContent    = fmt(sub);
+  document.getElementById('btnCheckout').disabled     = count === 0;
+
+  const items = document.getElementById('cartItems');
+  if (!cart.length) {
+    items.innerHTML = `<div class="cart-empty"><div class="big">🥢</div><p>Tu carrito está vacío</p></div>`;
+    return;
+  }
+  items.innerHTML = cart.map(c => `
+    <div class="cart-item">
+      <div class="ci-info"><div class="ci-name">${c.name}</div><div class="ci-price">${fmt(c.price)} c/u</div></div>
+      <div class="qty-ctrl">
+        <button onclick="removeFromCart(${c.id})">−</button>
+        <span class="qty-num">${c.qty}</span>
+        <button onclick="addToCart(${c.id})">+</button>
+      </div>
+      <span class="ci-subtotal">${fmt(c.price*c.qty)}</span>
+    </div>`).join('');
+}
+function openCart()   { document.getElementById('cartPanel').classList.add('open');    document.getElementById('cartOverlay').classList.add('open'); }
+function closeCart()  { document.getElementById('cartPanel').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
+function toggleCart() { document.getElementById('cartPanel').classList.contains('open') ? closeCart() : openCart(); }
+
+/* ─── PAYMENT ───────────────────────────────────────────── */
+let selectedPay      = 'efectivo';
+let comprobanteB64   = null;  // base64 del comprobante
+
+// URL del QR Banco Económico Río Dragón
+const QR_URL = 'https://i.imgur.com/Uif6wpU.jpeg';
+
+function selectPay(method) {
+  selectedPay = method;
+  document.getElementById('payEfectivo').classList.toggle('active', method === 'efectivo');
+  document.getElementById('payQR').classList.toggle('active', method === 'qr');
+  document.getElementById('qrPanel').style.display = method === 'qr' ? '' : 'none';
+  // Sync QR amount
+  const total = cartTotal() + deliveryCost;
+  document.getElementById('qrAmount').textContent = fmt(total);
+}
+
+function previewComprobante(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const st = document.getElementById('comprobanteStatus');
+  st.textContent = '⏳ Procesando imagen…';
+  const reader = new FileReader();
+  reader.onload = e => {
+    comprobanteB64 = e.target.result; // data:image/...;base64,...
+    document.getElementById('uploadPlaceholder').style.display = 'none';
+    const prev = document.getElementById('comprobantePreview');
+    prev.src = comprobanteB64;
+    prev.style.display = 'block';
+    st.textContent = '✅ Comprobante listo';
+  };
+  reader.readAsDataURL(file);
+}
+function openCheckout() {
+  if (!cart.length) return;
+  closeCart();
+  const sub = cartTotal();
+  const grand = sub + deliveryCost;
+  document.getElementById('modalSummary').innerHTML = cart.map(c =>
+    `<div class="os-item"><span><b style="color:var(--gold)">${c.qty}×</b> ${c.name}</span><span>${fmt(c.price*c.qty)}</span></div>`
+  ).join('');
+  document.getElementById('modalDelivery').textContent = fmt(deliveryCost);
+  document.getElementById('modalTotal').textContent    = fmt(grand);
+  document.getElementById('qrAmount').textContent      = fmt(grand);
+  // Reset payment
+  selectedPay = 'efectivo'; comprobanteB64 = null;
+  document.getElementById('payEfectivo').classList.add('active');
+  document.getElementById('payQR').classList.remove('active');
+  document.getElementById('qrPanel').style.display = 'none';
+  document.getElementById('uploadPlaceholder').style.display = '';
+  document.getElementById('comprobantePreview').style.display = 'none';
+  document.getElementById('comprobanteStatus').textContent = '';
+  document.getElementById('checkoutModal').classList.add('open');
+  setTimeout(initAutocomplete, 100);
+}
+function closeCheckout() { document.getElementById('checkoutModal').classList.remove('open'); }
+
+/* ─── SUBMIT → FIREBASE ─────────────────────────────────── */
+async function submitOrder() {
+  const name    = document.getElementById('fName').value.trim();
+  const address = document.getElementById('fAddress').value.trim();
+  const ref     = document.getElementById('fRef').value.trim();
+  const phone   = document.getElementById('fPhone').value.trim();
+  if (!name || !phone) { alert('Completa: nombre y teléfono.'); return; }
+  if (!address && deliveryKm === 0) { alert('Ingresa tu dirección de entrega o usa el GPS.'); return; }
+  const finalAddress = address || `GPS: ${document.getElementById('addrStatus').textContent}`;
+
+  // Validar comprobante si eligió QR
+  if (selectedPay === 'qr' && !comprobanteB64) {
+    alert('Por favor sube la captura del comprobante de pago por QR.');
+    return;
+  }
+
+  const btn = document.getElementById('btnSend');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+
+  try {
+    const counterRef = db.ref('orderCounter');
+    const snap = await counterRef.once('value');
+    const newCount = (snap.val() || 0) + 1;
+    await counterRef.set(newCount);
+    const orderNum = String(newCount).padStart(3,'0');
+
+    const sub = cartTotal();
+    const order = {
+      id:          orderNum,
+      timestamp:   Date.now(),
+      date:        new Date().toLocaleString('es-BO'),
+      status:      'pendiente',
+      pagado:      selectedPay === 'qr',  // true si pagó por QR
+      metodoPago:  selectedPay === 'qr' ? 'QR Banco Económico' : 'Efectivo',
+      comprobante: comprobanteB64 || null,
+      customer:    { name, address: finalAddress, ref, phone },
+      items:       cart.map(c => ({ id:c.id, name:c.name, price:c.price, qty:c.qty })),
+      subtotal:    sub,
+      delivery:    deliveryCost,
+      km:          parseFloat((deliveryKm||0).toFixed(2)),
+      rain:        isRaining,
+      total:       sub + deliveryCost
+    };
+
+    await db.ref('orders/' + orderNum).set(order);
+
+    cart = []; deliveryCost = 0; deliveryKm = 0; isRaining = false;
+    autocomplete = null; comprobanteB64 = null;
+    renderCart();
+    closeCheckout();
+    document.getElementById('orderNumTag').textContent = `Pedido #${orderNum}`;
+    document.getElementById('appBody').style.display   = 'none';
+    document.getElementById('successScreen').classList.add('show');
+    document.getElementById('nav').style.display       = 'none';
+    // Start real-time tracking
+    startTracking(orderNum, order);
+
+  } catch(e) {
+    console.error(e);
+    alert('Error al enviar pedido. Verifica tu conexión.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '🐉 Confirmar y enviar pedido';
+  }
+}
+
+function goBack() {
+  // Stop Firebase listener and clear saved order
+  if (trackUnsub) { trackUnsub(); trackUnsub = null; }
+  localStorage.removeItem('rd_active_order');
+  document.getElementById('appBody').style.display = '';
+  document.getElementById('successScreen').classList.remove('show');
+  document.getElementById('nav').style.display = '';
+  renderCart();
+}
+
+/* ─── ORDER TRACKING ─────────────────────────────────── */
+let trackUnsub    = null;
+let currentOrder  = null;
+
+// Steps definition — key matches Firebase status or custom flags
+const STEPS = [
+  { key:'recibido',   label:'Pedido recibido',              icon:'📋' },
+  { key:'pago_ok',    label:'Río Dragón verificó tu pago',  icon:'✅', onlyQR: true },
+  { key:'aceptado',   label:'Pedido aceptado',              icon:'👍' },
+  { key:'cocina',     label:'En cocina',                    icon:'🔥' },
+  { key:'camino',     label:'En camino',                    icon:'🛵' },
+  { key:'entregado',  label:'Entregado',                    icon:'🎉' },
+];
+
+// Map Firebase status → which steps are done/active
+function getStepState(order) {
+  const s = order.status;
+  const isQR = order.metodoPago === 'QR Banco Económico';
+  // Order of progression
+  const flow = isQR
+    ? ['recibido','pago_ok','aceptado','cocina','camino','entregado']
+    : ['recibido','aceptado','cocina','camino','entregado'];
+
+  // Which index is "active" based on Firebase status
+  const statusToIndex = {
+    pendiente: isQR ? (order.pagoVerificado ? 2 : 1) : 1,
+    aceptado:  isQR ? 3 : 2,
+    cocina:    isQR ? 4 : 3,
+    camino:    isQR ? 5 : 4,
+    entregado: flow.length - 1,
+  };
+  // recibido is always done
+  if (s === 'pendiente' && isQR && !order.pagoVerificado) {
+    // waiting for payment verification
+    return { flow, activeIdx: 1 };
+  }
+  return { flow, activeIdx: statusToIndex[s] ?? 1 };
+}
+
+const STATUS_UI = {
+  pendiente:  { icon:'⏳', text:'Pedido recibido',    sub:'Estamos revisando tu pedido...' },
+  aceptado:   { icon:'👍', text:'¡Pedido aceptado!',  sub:'El restaurante confirmó tu pedido.' },
+  cocina:     { icon:'🔥', text:'En cocina',           sub:'Tus platos están siendo preparados.' },
+  camino:     { icon:'🛵', text:'¡En camino!',         sub:'Tu delivery está en ruta.' },
+  entregado:  { icon:'🎉', text:'¡Entregado!',         sub:'¡Buen provecho! Gracias por elegirnos.' },
+};
+
+function startTracking(orderNum, orderData) {
+  currentOrder = orderData;
+  // Persistir para sobrevivir recargas
+  localStorage.setItem('rd_active_order', orderNum);
+  const sumEl = document.getElementById('trackSummary');
+  sumEl.innerHTML = `
+    <h4>Tu pedido</h4>
+    ${orderData.items.map(it => `<div class="ts-row"><span>${it.qty}× ${it.name}</span><span>${fmt(it.price*it.qty)}</span></div>`).join('')}
+    <div class="ts-row"><span>🛵 Delivery</span><span>${fmt(orderData.delivery||0)}</span></div>
+    <div class="ts-total"><span>Total</span><span>${fmt(orderData.total)}</span></div>`;
+
+  // Listen to status changes in real time
+  if (trackUnsub) trackUnsub();
+  const ref = db.ref('orders/' + orderNum);
+  const handler = ref.on('value', snap => {
+    const o = snap.val();
+    if (!o) return;
+    currentOrder = o;
+    renderTracking(o);
+  });
+  trackUnsub = () => ref.off('value', handler);
+}
+
+function renderTracking(o) {
+  const isQR = o.metodoPago === 'QR Banco Económico';
+  const ui   = STATUS_UI[o.status] || STATUS_UI['pendiente'];
+
+  // Update headline
+  document.getElementById('trackIcon').textContent       = ui.icon;
+  document.getElementById('trackStatusText').textContent = ui.text;
+  document.getElementById('trackStatusSub').textContent  = ui.sub;
+
+  // Build steps
+  const { flow, activeIdx } = getStepState(o);
+  const allSteps = STEPS.filter(s => !s.onlyQR || isQR);
+  const visibleSteps = allSteps.filter(s => flow.includes(s.key));
+
+  document.getElementById('trackSteps').innerHTML = visibleSteps.map((step, idx) => {
+    const flowIdx = flow.indexOf(step.key);
+    let cls = '';
+    if (flowIdx < activeIdx) cls = 'done';
+    else if (flowIdx === activeIdx) cls = 'active';
+    return `
+      <div class="track-step ${cls}">
+        <div class="step-dot">${cls === 'done' ? '✓' : step.icon}</div>
+        <div class="step-info">
+          <div class="step-label">${step.label}</div>
+          ${cls !== '' ? `<div class="step-time">${cls === 'active' ? 'Ahora mismo' : 'Completado'}</div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ─── INIT ──────────────────────────────────────────────── */
+renderMenu();
+renderCart();
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
+
+// Restaurar seguimiento si hay un pedido activo guardado
+(async () => {
+  const savedOrder = localStorage.getItem('rd_active_order');
+  if (!savedOrder) return;
+  try {
+    const snap = await db.ref('orders/' + savedOrder).once('value');
+    const order = snap.val();
+    if (!order) { localStorage.removeItem('rd_active_order'); return; }
+    // Borrar si fue entregado hace más de 3 horas
+    const hoursAgo = (Date.now() - (order.timestamp||0)) / 3600000;
+    if (hoursAgo > 3 && order.status === 'entregado') {
+      localStorage.removeItem('rd_active_order'); return;
+    }
+    // Mostrar pantalla de seguimiento
+    document.getElementById('orderNumTag').textContent = `Pedido #${savedOrder}`;
+    document.getElementById('appBody').style.display   = 'none';
+    document.getElementById('successScreen').classList.add('show');
+    document.getElementById('nav').style.display       = 'none';
+    startTracking(savedOrder, order);
+  } catch(e) { localStorage.removeItem('rd_active_order'); }
+})();
+</script>
+</body>
+</html>
