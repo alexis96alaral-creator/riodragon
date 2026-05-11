@@ -1001,7 +1001,7 @@ async function submitOrder() {
 function goBack() {
   // Stop Firebase listener and clear saved order
   if (trackUnsub) { trackUnsub(); trackUnsub = null; }
-  localStorage.removeItem('rd_active_order');
+ window.localStorage.removeItem('rd_active_order');
   document.getElementById('appBody').style.display = '';
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('nav').style.display = '';
@@ -1058,7 +1058,7 @@ const STATUS_UI = {
 function startTracking(orderNum, orderData) {
   currentOrder = orderData;
   // Persistir para sobrevivir recargas
-  localStorage.setItem('rd_active_order', orderNum);
+ window.localStorage.setItem('rd_active_order', orderNum);
   const sumEl = document.getElementById('trackSummary');
   sumEl.innerHTML = `
     <h4>Tu pedido</h4>
@@ -1115,7 +1115,7 @@ document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(
 
 // Restaurar seguimiento si hay un pedido activo guardado
 function tryRestoreOrder() {
-  const savedOrder = localStorage.getItem('rd_active_order');
+  const savedOrder =window.localStorage.getItem('rd_active_order');
   if (!savedOrder) return;
 
   // Mostrar pantalla de tracking inmediatamente mientras carga Firebase
@@ -1133,14 +1133,14 @@ function tryRestoreOrder() {
       const order = snap.val();
       if (!order) {
         // Pedido no existe, volver al menú
-        localStorage.removeItem('rd_active_order');
+       window.localStorage.removeItem('rd_active_order');
         goBack();
         return;
       }
       // Si fue entregado hace más de 3 horas, limpiar
       const hoursAgo = (Date.now() - (order.timestamp||0)) / 3600000;
       if (hoursAgo > 3 && order.status === 'entregado') {
-        localStorage.removeItem('rd_active_order');
+       window.localStorage.removeItem('rd_active_order');
         goBack();
         return;
       }
