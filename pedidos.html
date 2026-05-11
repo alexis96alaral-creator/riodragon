@@ -417,6 +417,38 @@
     }
     .btn-again:hover { background: var(--red); color: #fff; }
 
+    /* ─── FLOATING ORDER BAR ─────────────────────────────── */
+    #floatingBar {
+      position: fixed; bottom: 16px; left: 16px; right: 16px;
+      background: var(--ink);
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 8px 32px rgba(0,0,0,.35);
+      z-index: 150; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.1);
+      animation: slideUp .3s ease;
+      transition: transform .15s;
+    }
+    #floatingBar:active { transform: scale(.98); }
+    .fb-left  { display: flex; align-items: center; gap: 12px; }
+    .fb-icon  { font-size: 1.4rem; }
+    .fb-title { font-size: .88rem; font-weight: 700; color: #fff; }
+    .fb-num   { font-size: .72rem; color: rgba(255,255,255,.4); margin-top: 1px; }
+    .fb-right { flex-shrink: 0; }
+    .fb-status {
+      font-size: .78rem; font-weight: 600;
+      color: var(--gold); white-space: nowrap;
+    }
+    /* pulse dot */
+    .fb-title::before {
+      content: ''; display: inline-block;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--success); margin-right: 6px;
+      animation: stepPulse 1.5s ease infinite;
+      vertical-align: middle;
+    }
+
     #cartItems::-webkit-scrollbar { width: 4px; }
     #cartItems::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
@@ -481,7 +513,21 @@
   <!-- Order summary mini -->
   <div class="track-summary" id="trackSummary"></div>
 
-  <button class="btn-again" onclick="goBack()">← Hacer otro pedido</button>
+  <button class="btn-again" onclick="goBack()">← Volver al menú</button>
+</div>
+
+<!-- ── FLOATING ORDER BAR ────────────────────────────────── -->
+<div id="floatingBar" style="display:none" onclick="showFullTracking()">
+  <div class="fb-left">
+    <span class="fb-icon" id="fbIcon">⏳</span>
+    <div>
+      <div class="fb-title" id="fbTitle">Pedido en curso</div>
+      <div class="fb-num"  id="fbNum"></div>
+    </div>
+  </div>
+  <div class="fb-right">
+    <span class="fb-status" id="fbStatus">Ver seguimiento →</span>
+  </div>
 </div>
 
 <!-- ── CART DRAWER ──────────────────────────────────────── -->
@@ -999,16 +1045,60 @@ async function submitOrder() {
 }
 
 function goBack() {
-  // Stop Firebase listener and clear saved order
-  if (trackUnsub) { trackUnsub(); trackUnsub = null; }
- window.localStorage.removeItem('rd_active_order');
+  // Volver al menú pero mantener tracking flotante
   document.getElementById('appBody').style.display = '';
   document.getElementById('successScreen').classList.remove('show');
   document.getElementById('nav').style.display = '';
   renderCart();
+  // Mostrar barra flotante si hay pedido activo
+  updateFloatingBar();
 }
 
-/* ─── ORDER TRACKING ─────────────────────────────────── */
+function clearOrder() {
+  // Borrar pedido completamente (solo cuando entregado)
+  if (trackUnsub) { trackUnsub(); trackUnsub = null; }
+  window.localStorage.removeItem('rd_active_order');
+  document.getElementById('floatingBar').style.display = 'none';
+}
+
+/* ─── FLOATING BAR ───────────────────────────────────── */
+const STATUS_ICON = {
+  pendiente:'⏳', aceptado:'👍', cocina:'🔥', camino:'🛵', entregado:'🎉'
+};
+const STATUS_SHORT = {
+  pendiente:'Revisando pedido…',
+  aceptado: 'Pedido aceptado',
+  cocina:   'En cocina 🔥',
+  camino:   '¡En camino! 🛵',
+  entregado:'¡Entregado! 🎉'
+};
+
+function updateFloatingBar() {
+  const savedOrder = window.localStorage.getItem('rd_active_order');
+  const bar = document.getElementById('floatingBar');
+  // Solo mostrar si estamos en el menú (successScreen oculto)
+  const onTracking = document.getElementById('successScreen').classList.contains('show');
+  if (!savedOrder || onTracking) { bar.style.display = 'none'; return; }
+  if (!currentOrder) { bar.style.display = 'none'; return; }
+
+  const status = currentOrder.status || 'pendiente';
+  bar.style.display = 'flex';
+  document.getElementById('fbIcon').textContent   = STATUS_ICON[status] || '⏳';
+  document.getElementById('fbTitle').textContent  = STATUS_SHORT[status] || 'Pedido en curso';
+  document.getElementById('fbNum').textContent    = `Pedido #${savedOrder}`;
+  document.getElementById('fbStatus').textContent = status === 'entregado' ? 'Ver detalle ✓' : 'Ver seguimiento →';
+}
+
+function showFullTracking() {
+  const savedOrder = window.localStorage.getItem('rd_active_order');
+  if (!savedOrder || !currentOrder) return;
+  document.getElementById('orderNumTag').textContent = `Pedido #${savedOrder}`;
+  document.getElementById('appBody').style.display   = 'none';
+  document.getElementById('successScreen').classList.add('show');
+  document.getElementById('nav').style.display       = 'none';
+  document.getElementById('floatingBar').style.display = 'none';
+  renderTracking(currentOrder);
+}
 let trackUnsub    = null;
 let currentOrder  = null;
 
@@ -1082,17 +1172,15 @@ function renderTracking(o) {
   const isQR = o.metodoPago === 'QR Banco Económico';
   const ui   = STATUS_UI[o.status] || STATUS_UI['pendiente'];
 
-  // Update headline
   document.getElementById('trackIcon').textContent       = ui.icon;
   document.getElementById('trackStatusText').textContent = ui.text;
   document.getElementById('trackStatusSub').textContent  = ui.sub;
 
-  // Build steps
   const { flow, activeIdx } = getStepState(o);
   const allSteps = STEPS.filter(s => !s.onlyQR || isQR);
   const visibleSteps = allSteps.filter(s => flow.includes(s.key));
 
-  document.getElementById('trackSteps').innerHTML = visibleSteps.map((step, idx) => {
+  document.getElementById('trackSteps').innerHTML = visibleSteps.map((step) => {
     const flowIdx = flow.indexOf(step.key);
     let cls = '';
     if (flowIdx < activeIdx) cls = 'done';
@@ -1106,6 +1194,18 @@ function renderTracking(o) {
         </div>
       </div>`;
   }).join('');
+
+  // Sync floating bar
+  updateFloatingBar();
+
+  // Si entregado y no estamos en la pantalla de tracking, mostrar barra brevemente luego limpiar
+  if (o.status === 'entregado') {
+    setTimeout(() => {
+      // Limpiar después de 10 minutos de entregado
+      const minAgo = (Date.now() - (o.timestamp||0)) / 60000;
+      if (minAgo > 10) clearOrder();
+    }, 600000);
+  }
 }
 
 /* ─── INIT ──────────────────────────────────────────────── */
