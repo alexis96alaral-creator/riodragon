@@ -7,330 +7,194 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-
-  <!-- Firebase SDK v9 compat -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
-
   <style>
-    /* ─── TOKENS ─────────────────────────────────────────── */
     :root {
-      --gold:    #d4ac0d;
-      --red:     #c0392b;
-      --ink:     #1a0a00;
-      --success: #27ae60;
-      --warn:    #e67e22;
-      --blue:    #2980b9;
-      --font-h:  'Noto Serif SC', serif;
-      --font-b:  'DM Sans', sans-serif;
+      --gold:#d4ac0d; --red:#c0392b; --ink:#1a0a00;
+      --success:#27ae60; --warn:#e67e22; --blue:#2980b9; --purple:#8e44ad;
+      --font-h:'Noto Serif SC',serif; --font-b:'DM Sans',sans-serif;
     }
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: var(--font-b);
-      background: #0d0d0d;
-      color: #fff;
-      min-height: 100vh;
-    }
-    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font-b);background:#0d0d0d;color:#fff;min-height:100vh}
+    button{cursor:pointer;border:none;background:none;font-family:inherit}
+    a{text-decoration:none}
 
-    /* ─── LOGIN SCREEN ───────────────────────────────────── */
-    #loginScreen {
-      min-height: 100vh;
-      display: flex; align-items: center; justify-content: center;
-      background: radial-gradient(ellipse at 60% 40%, #1a0a00 0%, #0d0d0d 70%);
-      padding: 20px;
-    }
-    .login-box {
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.1);
-      border-radius: 24px;
-      padding: 42px 36px;
-      width: 100%; max-width: 380px;
-      text-align: center;
-      box-shadow: 0 20px 60px rgba(0,0,0,.5);
-    }
-    .login-logo {
-      width: 72px; height: 72px; border-radius: 50%;
-      object-fit: cover; border: 3px solid var(--gold);
-      margin: 0 auto 16px;
-    }
-    .login-box h1 {
-      font-family: var(--font-h); color: var(--gold);
-      font-size: 1.5rem; margin-bottom: 4px;
-    }
-    .login-box .sub { color: rgba(255,255,255,.4); font-size: .85rem; margin-bottom: 32px; }
-    .login-box input {
-      width: 100%;
-      background: rgba(255,255,255,.07);
-      border: 1.5px solid rgba(255,255,255,.14);
-      border-radius: 12px;
-      padding: 14px 18px; color: #fff;
-      font-size: 1rem; text-align: center;
-      letter-spacing: .25em; font-weight: 600;
-      outline: none; transition: border-color .2s;
-      margin-bottom: 14px;
-    }
-    .login-box input:focus { border-color: var(--gold); }
-    .login-box .btn-login {
-      width: 100%; background: var(--gold); color: var(--ink);
-      padding: 14px; border-radius: 12px; font-weight: 700;
-      font-size: 1rem; transition: background .2s, transform .1s;
-    }
-    .login-box .btn-login:hover  { background: #b7950b; }
-    .login-box .btn-login:active { transform: scale(.97); }
-    #loginErr { color: #e74c3c; font-size: .82rem; margin-top: 10px; min-height: 18px; }
+    /* LOGIN */
+    #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 60% 40%,#1a0a00 0%,#0d0d0d 70%);padding:20px}
+    .login-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:24px;padding:42px 36px;width:100%;max-width:380px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .login-logo{width:72px;height:72px;border-radius:50%;object-fit:cover;border:3px solid var(--gold);margin:0 auto 16px}
+    .login-box h1{font-family:var(--font-h);color:var(--gold);font-size:1.5rem;margin-bottom:4px}
+    .login-box .sub{color:rgba(255,255,255,.4);font-size:.85rem;margin-bottom:32px}
+    .login-box input{width:100%;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.14);border-radius:12px;padding:14px 18px;color:#fff;font-size:1rem;text-align:center;letter-spacing:.25em;font-weight:600;outline:none;transition:border-color .2s;margin-bottom:14px}
+    .login-box input:focus{border-color:var(--gold)}
+    .btn-login{width:100%;background:var(--gold);color:var(--ink);padding:14px;border-radius:12px;font-weight:700;font-size:1rem;transition:background .2s}
+    .btn-login:hover{background:#b7950b}
+    #loginErr{color:#e74c3c;font-size:.82rem;margin-top:10px;min-height:18px}
 
-    /* ─── KITCHEN PANEL ──────────────────────────────────── */
-    #kitchenScreen { display: none; }
+    /* BANNERS */
+    #closedBanner{display:none;background:#1a0a00;border-bottom:2px solid var(--warn);padding:9px 20px;text-align:center;font-size:.83rem;color:var(--warn);font-weight:600}
+    #busyBanner{display:none;background:#7d3c00;border-bottom:2px solid var(--warn);padding:9px 20px;text-align:center;font-size:.83rem;color:#fff;font-weight:600}
 
-    /* Top bar */
-    .kbar {
-      background: #111; border-bottom: 1px solid rgba(255,255,255,.07);
-      padding: 0 24px; height: 66px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 50;
-    }
-    .kbar-left { display: flex; align-items: center; gap: 14px; }
-    .kbar-logo {
-      width: 42px; height: 42px; border-radius: 50%;
-      object-fit: cover; border: 2px solid var(--gold);
-    }
-    .kbar-title { font-family: var(--font-h); color: var(--gold); font-size: 1.05rem; }
-    .kbar-sub   { font-size: .72rem; color: rgba(255,255,255,.35); margin-top: 1px; }
+    /* KITCHEN */
+    #kitchenScreen{display:none}
 
-    .kbar-right { display: flex; align-items: center; gap: 16px; }
+    /* TOPBAR */
+    .kbar{background:#111;border-bottom:1px solid rgba(255,255,255,.07);padding:0 16px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;gap:8px}
+    .kbar-left{display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .kbar-logo{width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+    .kbar-title{font-family:var(--font-h);color:var(--gold);font-size:.95rem}
+    .kbar-sub{font-size:.65rem;color:rgba(255,255,255,.3);margin-top:1px}
+    .kbar-right{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+    .live-dot{display:flex;align-items:center;gap:4px;font-size:.7rem;color:var(--success)}
+    .live-dot .dot{width:6px;height:6px;border-radius:50%;background:var(--success);animation:pulse 1.4s ease infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+    .badge-pending{background:var(--red);color:#fff;font-size:.7rem;font-weight:700;padding:3px 9px;border-radius:50px}
+    .kbar-btn{padding:5px 10px;border-radius:8px;font-size:.72rem;font-weight:700;transition:opacity .2s;white-space:nowrap}
+    .kbar-btn:hover{opacity:.8}
+    .btn-busy{background:var(--warn);color:#fff}
+    .btn-busy.on{background:var(--success)}
+    .btn-logout{color:rgba(255,255,255,.3);font-size:.75rem}
+    .btn-logout:hover{color:#fff}
+    .btn-sound{font-size:.85rem;color:rgba(255,255,255,.4)}
 
-    /* Live indicator */
-    .live-dot {
-      display: flex; align-items: center; gap: 6px;
-      font-size: .75rem; color: var(--success);
-    }
-    .live-dot .dot {
-      width: 8px; height: 8px; border-radius: 50%; background: var(--success);
-      animation: pulse 1.4s ease infinite;
-    }
-    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(1.3)} }
+    /* SCHEDULE BAR */
+    .sched-bar{background:#161616;border-bottom:1px solid rgba(255,255,255,.05);padding:6px 16px;font-size:.73rem;color:rgba(255,255,255,.4);display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .time-now{color:var(--gold);font-weight:700}
+    .sched-badge{padding:2px 9px;border-radius:20px;font-weight:700;font-size:.7rem}
+    .sched-open{background:rgba(39,174,96,.2);color:var(--success)}
+    .sched-closed{background:rgba(192,57,43,.2);color:#e74c3c}
 
-    .badge-pending {
-      background: var(--red); color: #fff;
-      font-size: .75rem; font-weight: 700;
-      padding: 4px 12px; border-radius: 50px;
-    }
-    .btn-logout { color: rgba(255,255,255,.3); font-size: .8rem; transition: color .2s; }
-    .btn-logout:hover { color: #fff; }
+    /* BLOCKED PANEL */
+    #blockedPanel{display:none;background:#1a0a00;border-bottom:1px solid rgba(255,100,0,.15);padding:12px 16px}
+    .blocked-title{font-size:.75rem;text-transform:uppercase;letter-spacing:.07em;color:var(--warn);margin-bottom:8px;font-weight:700}
+    .blocked-grid{display:flex;flex-wrap:wrap;gap:5px}
+    .dish-chip{padding:4px 10px;border-radius:20px;font-size:.72rem;font-weight:600;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;user-select:none}
+    .dish-chip.blocked{background:var(--red);border-color:var(--red);color:#fff}
+    .dish-chip:hover{border-color:var(--warn)}
 
-    /* Tabs / filter */
-    .filters {
-      display: flex; gap: 8px; padding: 18px 24px 10px;
-      overflow-x: auto;
-    }
-    .filters::-webkit-scrollbar { display: none; }
-    .filter-btn {
-      padding: 7px 18px; border-radius: 50px;
-      font-size: .8rem; font-weight: 600;
-      border: 1.5px solid rgba(255,255,255,.12);
-      color: rgba(255,255,255,.5);
-      transition: all .2s; white-space: nowrap;
-    }
-    .filter-btn.active { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.3); color: #fff; }
-    .filter-btn.f-all       { }
-    .filter-btn.f-pendiente { }
-    .filter-btn.f-cocina.active  { border-color: var(--warn);    color: var(--warn);    background: rgba(230,126,34,.12); }
-    .filter-btn.f-camino.active  { border-color: var(--blue);    color: var(--blue);    background: rgba(41,128,185,.12); }
-    .filter-btn.f-entregado.active{ border-color: var(--success); color: var(--success); background: rgba(39,174,96,.12); }
+    /* FILTERS */
+    .filters{display:flex;gap:7px;padding:12px 16px 6px;overflow-x:auto}
+    .filters::-webkit-scrollbar{display:none}
+    .filter-btn{padding:5px 14px;border-radius:50px;font-size:.76rem;font-weight:600;border:1.5px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);transition:all .2s;white-space:nowrap}
+    .filter-btn.active{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff}
+    .filter-btn.f-cocina.active{border-color:var(--warn);color:var(--warn);background:rgba(230,126,34,.12)}
+    .filter-btn.f-camino.active{border-color:var(--blue);color:var(--blue);background:rgba(41,128,185,.12)}
 
-    /* Grid */
-    .kitchen-body { padding: 8px 24px 60px; }
-    #ordersGrid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-      gap: 20px;
-    }
+    /* GRID */
+    .kitchen-body{padding:8px 14px 70px}
+    #ordersGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(295px,1fr));gap:16px}
+    .k-empty{grid-column:1/-1;text-align:center;padding:70px 0;color:rgba(255,255,255,.2)}
+    .k-empty .big{font-size:3.5rem;margin-bottom:12px}
 
-    /* Empty state */
-    .k-empty {
-      grid-column: 1/-1; text-align: center;
-      padding: 80px 0; color: rgba(255,255,255,.25);
-    }
-    .k-empty .big { font-size: 4rem; margin-bottom: 14px; }
+    /* ORDER CARD */
+    .order-card{background:#191210;border:1.5px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;transition:border-color .3s,box-shadow .3s;animation:cardIn .3s ease;position:relative;overflow:hidden}
+    @keyframes cardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+    .order-card.new-flash{animation:cardIn .3s ease,newFlash 1.6s ease}
+    @keyframes newFlash{0%{box-shadow:0 0 0 0 rgba(212,172,13,.9)}50%{box-shadow:0 0 0 18px rgba(212,172,13,0)}100%{box-shadow:0 0 0 0 rgba(212,172,13,0)}}
+    .order-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;transition:background .3s}
+    .order-card.s-pendiente{border-color:rgba(255,255,255,.1)}
+    .order-card.s-aceptado{border-color:var(--purple);box-shadow:0 0 16px rgba(142,68,173,.15)}
+    .order-card.s-aceptado::before{background:var(--purple)}
+    .order-card.s-cocina{border-color:var(--warn);box-shadow:0 0 16px rgba(230,126,34,.15)}
+    .order-card.s-cocina::before{background:var(--warn)}
+    .order-card.s-camino{border-color:var(--blue);box-shadow:0 0 16px rgba(41,128,185,.15)}
+    .order-card.s-camino::before{background:var(--blue)}
 
-    /* ── Order card ─────────────────────────────────────── */
-    .order-card {
-      background: #191210;
-      border: 1.5px solid rgba(255,255,255,.07);
-      border-radius: 20px; padding: 22px;
-      transition: border-color .3s, box-shadow .3s;
-      animation: cardIn .35s ease;
-      position: relative; overflow: hidden;
-    }
-    @keyframes cardIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:none} }
+    .card-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+    .card-num{font-family:var(--font-h);font-size:1.1rem;color:var(--gold);font-weight:700}
+    .card-time{font-size:.68rem;color:rgba(255,255,255,.3);margin-top:2px}
+    .pill{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:50px}
+    .pill-pendiente{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
+    .pill-aceptado{background:var(--purple);color:#fff}
+    .pill-cocina{background:var(--warn);color:#fff}
+    .pill-camino{background:var(--blue);color:#fff}
+    .pill-entregado{background:var(--success);color:#fff}
 
-    /* new-order flash */
-    .order-card.new-flash {
-      animation: cardIn .35s ease, newFlash 1.2s ease;
-    }
-    @keyframes newFlash {
-      0%  { box-shadow: 0 0 0 0 rgba(212,172,13,.8); }
-      50% { box-shadow: 0 0 0 16px rgba(212,172,13,.0); }
-      100%{ box-shadow: 0 0 0 0 rgba(212,172,13,.0); }
-    }
+    .card-items{margin-bottom:10px}
+    .item-row{display:flex;justify-content:space-between;font-size:.84rem;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.82)}
+    .item-row:last-child{border:none}
+    .item-qty{color:var(--gold);font-weight:700;margin-right:5px}
 
-    .order-card.s-pendiente { border-color: rgba(255,255,255,.1); }
-    .order-card.s-cocina    { border-color: var(--warn);    box-shadow: 0 0 20px rgba(230,126,34,.15); }
-    .order-card.s-camino    { border-color: var(--blue);    box-shadow: 0 0 20px rgba(41,128,185,.15); }
-    .order-card.s-entregado { border-color: var(--success); opacity: .55; }
+    .card-customer{background:rgba(255,255,255,.04);border-radius:10px;padding:9px 11px;font-size:.79rem;color:rgba(255,255,255,.58);line-height:1.6;margin-bottom:9px}
+    .card-customer strong{color:#fff;display:block;margin-bottom:1px}
+    .phone-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;margin-top:3px;font-size:.74rem}
 
-    /* card top accent bar */
-    .order-card::before {
-      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: transparent; transition: background .3s; border-radius: 20px 20px 0 0;
-    }
-    .order-card.s-cocina::before    { background: var(--warn); }
-    .order-card.s-camino::before    { background: var(--blue); }
-    .order-card.s-entregado::before { background: var(--success); }
+    /* GPS button */
+    .btn-gps{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:7px;background:rgba(41,128,185,.14);border:1px solid rgba(41,128,185,.35);color:#5dade2;border-radius:8px;padding:7px 10px;font-size:.76rem;font-weight:600;transition:background .2s;font-family:var(--font-b)}
+    .btn-gps:hover{background:rgba(41,128,185,.25)}
 
-    .card-head {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .card-num  { font-family: var(--font-h); font-size: 1.2rem; color: var(--gold); font-weight: 700; }
-    .card-time { font-size: .72rem; color: rgba(255,255,255,.3); margin-top: 2px; }
+    .pay-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+    .pay-badge{font-size:.76rem;font-weight:700;padding:3px 9px;border-radius:20px}
+    .card-totals{display:flex;justify-content:space-between;font-size:.76rem;color:rgba(255,255,255,.38);margin-bottom:3px}
+    .card-grand{display:flex;justify-content:space-between;font-family:var(--font-h);color:var(--gold);font-size:1rem;font-weight:700;margin-bottom:12px}
 
-    /* status pill */
-    .pill {
-      font-size: .7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .05em; padding: 4px 11px; border-radius: 50px;
-    }
-    .pill-pendiente { background: rgba(255,255,255,.08); color: rgba(255,255,255,.5); }
-    .pill-cocina    { background: var(--warn);    color: #fff; }
-    .pill-camino    { background: var(--blue);    color: #fff; }
-    .pill-entregado { background: var(--success); color: #fff; }
+    .card-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .act-btn{padding:9px 6px;border-radius:10px;font-size:.73rem;font-weight:700;text-align:center;transition:opacity .2s,transform .1s;border:2px solid transparent}
+    .act-btn:active{transform:scale(.95)}
+    .act-btn.verificar{background:var(--gold);color:var(--ink)}
+    .act-btn.aceptado{background:var(--purple);color:#fff}
+    .act-btn.cocina{background:var(--warn);color:#fff}
+    .act-btn.camino{background:var(--blue);color:#fff}
+    .act-btn.entregado{background:var(--success);color:#fff;grid-column:1/-1}
+    .act-btn.active{opacity:1;border-color:rgba(255,255,255,.45)}
+    .act-btn:not(.active){opacity:.37}
 
-    /* items */
-    .card-items { margin-bottom: 14px; }
-    .item-row {
-      display: flex; justify-content: space-between;
-      font-size: .88rem; padding: 5px 0;
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      color: rgba(255,255,255,.85);
-    }
-    .item-row:last-child { border: none; }
-    .item-qty { color: var(--gold); font-weight: 700; margin-right: 6px; }
+    .card-timer{font-size:.67rem;color:rgba(255,255,255,.22);text-align:right;margin-top:7px}
+    .card-timer.urgent{color:var(--red);font-weight:700}
 
-    /* customer block */
-    .card-customer {
-      background: rgba(255,255,255,.04);
-      border-radius: 12px; padding: 12px 14px;
-      font-size: .83rem; color: rgba(255,255,255,.6);
-      line-height: 1.6; margin-bottom: 14px;
-    }
-    .card-customer strong { color: #fff; display: block; margin-bottom: 2px; font-size: .9rem; }
-    .card-customer .phone-badge {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: rgba(255,255,255,.07); border-radius: 6px;
-      padding: 2px 8px; margin-top: 4px; font-size: .78rem;
-    }
+    /* HISTORY MODAL */
+    #historyModal{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);overflow-y:auto;padding:20px}
+    #historyModal.open{display:flex;align-items:flex-start;justify-content:center}
+    .hist-box{background:#1a1208;border:1px solid rgba(255,255,255,.1);border-radius:20px;width:100%;max-width:540px;margin:auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+    .hist-head{background:#111;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.07)}
+    .hist-head h2{font-family:var(--font-h);color:var(--gold);font-size:1.05rem}
+    .hist-head .hist-total{font-size:.8rem;color:var(--gold);font-weight:700}
+    .hist-body{padding:14px 18px;max-height:65vh;overflow-y:auto}
+    .hist-item{background:rgba(255,255,255,.03);border-radius:10px;padding:10px 13px;margin-bottom:8px;border:1px solid rgba(255,255,255,.05)}
+    .hi-head{display:flex;justify-content:space-between;margin-bottom:4px}
+    .hi-num{font-family:var(--font-h);color:var(--gold);font-size:.88rem}
+    .hi-time{font-size:.7rem;color:rgba(255,255,255,.28)}
+    .hi-info{font-size:.78rem;color:rgba(255,255,255,.52);line-height:1.5}
+    .hist-empty{text-align:center;padding:40px 0;color:rgba(255,255,255,.28)}
+    .btn-close-shift{width:calc(100% - 36px);margin:0 18px 18px;background:var(--red);color:#fff;padding:11px;border-radius:11px;font-weight:700;font-size:.88rem}
+    .btn-close-shift:hover{background:#922b21}
 
-    /* totals */
-    .card-totals {
-      display: flex; justify-content: space-between;
-      font-size: .8rem; color: rgba(255,255,255,.4);
-      margin-bottom: 4px;
-    }
-    .card-grand {
-      display: flex; justify-content: space-between; align-items: center;
-      font-family: var(--font-h); color: var(--gold);
-      font-size: 1.1rem; font-weight: 700; margin-bottom: 16px;
-    }
+    /* TOAST */
+    #toast{position:fixed;bottom:22px;right:18px;background:var(--gold);color:var(--ink);font-weight:700;font-size:.86rem;padding:11px 18px;border-radius:11px;box-shadow:0 8px 26px rgba(0,0,0,.4);transform:translateY(80px);opacity:0;transition:transform .3s ease,opacity .3s ease;z-index:999;pointer-events:none}
+    #toast.show{transform:translateY(0);opacity:1}
 
-    /* action buttons */
-    .card-actions { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
-    .act-btn {
-      padding: 10px 6px; border-radius: 12px;
-      font-size: .75rem; font-weight: 700; text-align: center;
-      transition: opacity .2s, transform .1s; border: 2px solid transparent;
-    }
-    /* action buttons */
-    .card-actions { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
-    .act-btn {
-      padding: 10px 6px; border-radius: 12px;
-      font-size: .75rem; font-weight: 700; text-align: center;
-      transition: opacity .2s, transform .1s; border: 2px solid transparent;
-    }
-    .act-btn:active  { transform: scale(.95); }
-    .act-btn.verificar { background: var(--gold);    color: var(--ink); }
-    .act-btn.aceptado  { background: #8e44ad;        color: #fff; }
-    .act-btn.cocina    { background: var(--warn);    color: #fff; }
-    .act-btn.camino    { background: var(--blue);    color: #fff; }
-    .act-btn.entregado { background: var(--success); color: #fff; grid-column: 1/-1; }
-    .act-btn.active    { opacity: 1; border-color: #fff; }
-    .act-btn:not(.active) { opacity: .4; }
-
-    /* timer badge */
-    .card-timer {
-      font-size: .7rem; color: rgba(255,255,255,.3);
-      text-align: right; margin-top: 10px;
-    }
-    .card-timer.urgent { color: var(--red); font-weight: 700; }
-
-    /* notification toast */
-    #toast {
-      position: fixed; bottom: 28px; right: 24px;
-      background: var(--gold); color: var(--ink);
-      font-weight: 700; font-size: .9rem;
-      padding: 14px 22px; border-radius: 14px;
-      box-shadow: 0 8px 30px rgba(0,0,0,.4);
-      transform: translateY(80px); opacity: 0;
-      transition: transform .35s ease, opacity .35s ease;
-      z-index: 999; pointer-events: none;
-    }
-    #toast.show { transform: translateY(0); opacity: 1; }
-
-    /* sound toggle */
-    .sound-btn {
-      font-size: .8rem; color: rgba(255,255,255,.35);
-      display: flex; align-items: center; gap: 5px; transition: color .2s;
-    }
-    .sound-btn:hover { color: #fff; }
-
-    @media (max-width: 600px) {
-      .kitchen-body { padding: 8px 12px 60px; }
-      .kbar { padding: 0 16px; }
-      .filters { padding: 14px 12px 8px; }
-      #ordersGrid { grid-template-columns: 1fr; }
+    @media(max-width:600px){
+      .kitchen-body{padding:6px 8px 60px}
+      #ordersGrid{grid-template-columns:1fr}
+      .kbar{padding:0 10px}
+      .kbar-btn{padding:4px 7px;font-size:.68rem}
     }
   </style>
 </head>
 <body>
 
-<!-- ════════════════════════════════════════════════════
-     LOGIN
-════════════════════════════════════════════════════ -->
+<!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
-    <img class="login-logo"
-         src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg"
-         alt="Logo" />
+    <img class="login-logo" src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg" alt="Logo" />
     <h1>Panel de Cocina</h1>
     <p class="sub">Río Dragón · Acceso exclusivo</p>
-    <input type="password" id="pwdInput" placeholder="••••••••"
-           onkeydown="if(event.key==='Enter') doLogin()" />
+    <input type="password" id="pwdInput" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
     <button class="btn-login" onclick="doLogin()">🔓 Entrar a cocina</button>
     <div id="loginErr"></div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════
-     KITCHEN PANEL
-════════════════════════════════════════════════════ -->
+<!-- KITCHEN -->
 <div id="kitchenScreen">
+  <div id="closedBanner">⛔ Fuera del horario de atención — Cocina cerrada</div>
+  <div id="busyBanner">⚠️ Cocina con alta demanda — Los pedidos pueden demorar más de lo normal</div>
 
-  <!-- Top bar -->
+  <!-- Topbar -->
   <div class="kbar">
     <div class="kbar-left">
-      <img class="kbar-logo"
-           src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg"
-           alt="Logo" />
+      <img class="kbar-logo" src="https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg" alt="Logo" />
       <div>
         <div class="kbar-title">Río Dragón · Cocina</div>
         <div class="kbar-sub" id="kbarDate"></div>
@@ -338,37 +202,62 @@
     </div>
     <div class="kbar-right">
       <div class="live-dot"><span class="dot"></span>EN VIVO</div>
-      <span class="badge-pending" id="badgePending">0 pedidos</span>
-      <button class="sound-btn" id="soundBtn" onclick="toggleSound()" title="Activar/silenciar notificación">🔔</button>
+      <span class="badge-pending" id="badgePending">0</span>
+      <button class="kbar-btn btn-busy" id="btnBusy" onclick="toggleBusy()">⚠️ Alta demanda</button>
+      <button class="kbar-btn" id="btnBlocked" onclick="toggleBlockedPanel()" style="background:rgba(255,80,0,.12);color:#e07050">🚫 Platos</button>
+      <button class="kbar-btn" onclick="openHistory()" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.55)">📋 Historial</button>
+      <button class="kbar-btn" onclick="confirmCloseShift()" style="background:rgba(255,255,255,.07);color:rgba(255,255,255,.55)">🔒 Turno</button>
+      <button class="btn-sound" id="soundBtn" onclick="toggleSound()">🔔</button>
       <button class="btn-logout" onclick="doLogout()">Salir ×</button>
     </div>
   </div>
 
+  <!-- Schedule -->
+  <div class="sched-bar">
+    <span>🕐 Bolivia: <span class="time-now" id="clockDisplay">--:--</span></span>
+    <span style="display:none" id="schedHours">11:50–14:50 · 18:45–21:50</span>
+    <span class="sched-badge" id="schedStatus">—</span>
+  </div>
+
+  <!-- Blocked dishes -->
+  <div id="blockedPanel">
+    <div class="blocked-title">🚫 Toca para bloquear / desbloquear plato</div>
+    <div class="blocked-grid" id="blockedGrid"></div>
+  </div>
+
   <!-- Filters -->
   <div class="filters">
-    <button class="filter-btn f-all active"       onclick="setFilter('all')">Todos</button>
-    <button class="filter-btn f-pendiente"         onclick="setFilter('pendiente')">⏳ Pendientes</button>
-    <button class="filter-btn f-cocina"            onclick="setFilter('cocina')">🔥 En cocina</button>
-    <button class="filter-btn f-camino"            onclick="setFilter('camino')">🛵 En camino</button>
-    <button class="filter-btn f-entregado"         onclick="setFilter('entregado')">✅ Entregados</button>
+    <button class="filter-btn f-all active"  onclick="setFilter('all')">Todos</button>
+    <button class="filter-btn f-pendiente"   onclick="setFilter('pendiente')">⏳ Pendientes</button>
+    <button class="filter-btn f-cocina"      onclick="setFilter('cocina')">🔥 En cocina</button>
+    <button class="filter-btn f-camino"      onclick="setFilter('camino')">🛵 En camino</button>
   </div>
 
   <!-- Orders -->
   <div class="kitchen-body">
     <div id="ordersGrid">
-      <div class="k-empty"><div class="big">🍽️</div><p>Esperando pedidos…<br>Aparecerán aquí en tiempo real.</p></div>
+      <div class="k-empty"><div class="big">🍽️</div><p>Esperando pedidos…</p></div>
     </div>
   </div>
 </div>
 
-<!-- Toast notification -->
+<!-- History Modal -->
+<div id="historyModal">
+  <div class="hist-box">
+    <div class="hist-head">
+      <h2>📋 Historial del turno</h2>
+      <span class="hist-total" id="histTotal"></span>
+      <button onclick="closeHistory()" style="color:rgba(255,255,255,.4);font-size:1rem">✕</button>
+    </div>
+    <div class="hist-body" id="historyBody"></div>
+    <button class="btn-close-shift" onclick="confirmCloseShift()">🔒 Cerrar turno y limpiar historial</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-/* ════════════════════════════════════════════════════════
-   ⚠️  CONFIGURACIÓN FIREBASE  ⚠️
-   Usa los MISMOS datos que en pedidos.html
-════════════════════════════════════════════════════════ */
+/* ── FIREBASE ─────────────────────────────────── */
 const firebaseConfig = {
   apiKey:            "AIzaSyCukdPwczdP9f_zuiOzj4UXn6m2MRc85LM",
   authDomain:        "riodragondelivery.firebaseapp.com",
@@ -378,265 +267,403 @@ const firebaseConfig = {
   messagingSenderId: "552329862007",
   appId:             "1:552329862007:web:6bd8b66b7d1f99390d1f72"
 };
-
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-/* ─── CONFIG ────────────────────────────────────────── */
+/* ── CONFIG ───────────────────────────────────── */
 const KITCHEN_PASSWORD = 'cocina123';
 const fmt = n => `Bs. ${Number(n).toFixed(2)}`;
 
-/* ─── STATE ─────────────────────────────────────────── */
-let allOrders    = {};   // { id: orderObj }
-let currentFilter= 'all';
-let isFirstLoad  = true;
-let soundEnabled = true;
-let unsubscribe  = null; // Firebase listener off handle
+// Horario Bolivia UTC-4
+const SCHEDULE = [
+  { open:'11:50', close:'14:50' },
+  { open:'18:45', close:'21:50' },
+];
 
-/* ─── LOGIN ─────────────────────────────────────────── */
+/* ── STATE ────────────────────────────────────── */
+let allOrders     = {};
+let historyOrders = JSON.parse(localStorage.getItem('rd_history') || '[]');
+let blockedDishes = JSON.parse(localStorage.getItem('rd_blocked') || '[]');
+let currentFilter = 'all';
+let isFirstLoad   = true;
+let soundEnabled  = true;
+let isBusy        = JSON.parse(localStorage.getItem('rd_busy') || 'false');
+let unsubscribe   = null;
+let alarmInterval = null;
+
+/* ── DISHES LIST ──────────────────────────────── */
+const ALL_DISHES = [
+  'Wantán','Rollitos Dragón','Siu Mai',
+  'Chaufa de Pollo','Chaufa de Res','Chaufa de Chancho','Chaufa Especial',
+  'Chaufa de Langostinos','Chaufa de Mariscos','Aeropuerto',
+  'Tallarín de Carne','Tallarín de Pollo','Tallarín de Chancho',
+  'Tallarín de Langostino','Tallarín Especial','Shangai',
+  'Pollo Tamarindo','Pollo Piña','Pollo Ostión','Pollo Champiñones',
+  'Pollo Verduras','Limón Kay','Chi Jau Kay','Kam Lu Wantán',
+  'Carne con Verduras','40-40',
+  'Chancho Tamarindo','Chancho Piña','Chancho al Ajo','Chancho con Verduras',
+  'Sopa Wantán','Sopa Fideo Chino','Caldo de Pollo','Fuchifu',
+  'Sopa Kamen','Sopa 7 Sabores',
+  'Lomo Saltado','Tallarín Criollo de Carne','Tallarín Criollo de Pollo',
+  'Papa Frita','Guarnición Chaufa','Arroz Blanco'
+];
+
+/* ── LOGIN ────────────────────────────────────── */
 function doLogin() {
-  const val = document.getElementById('pwdInput').value;
-  if (val !== KITCHEN_PASSWORD) {
+  if (document.getElementById('pwdInput').value !== KITCHEN_PASSWORD) {
     document.getElementById('loginErr').textContent = '❌ Contraseña incorrecta';
     document.getElementById('pwdInput').value = '';
     return;
   }
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('kitchenScreen').style.display = 'block';
-  document.getElementById('kbarDate').textContent = new Date().toLocaleDateString('es-BO', { weekday:'long', day:'numeric', month:'long' });
+  document.getElementById('kbarDate').textContent =
+    new Date().toLocaleDateString('es-BO',{weekday:'long',day:'numeric',month:'long',timeZone:'America/La_Paz'});
+  startClock();
+  syncBusyState();
+  renderBlockedGrid();
   startListening();
 }
+
 function doLogout() {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  stopAlarm();
   allOrders = {}; isFirstLoad = true;
   document.getElementById('kitchenScreen').style.display = 'none';
-  document.getElementById('loginScreen').style.display   = 'flex';
+  document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('pwdInput').value = '';
   document.getElementById('loginErr').textContent = '';
 }
 
-/* ─── FIREBASE LISTENER ─────────────────────────────── */
+/* ── CLOCK (Bolivia UTC-4) ────────────────────── */
+function getBoliviaTime() {
+  const now = new Date();
+  return new Date(now.getTime() + now.getTimezoneOffset()*60000 - 4*3600000);
+}
+function timeToMin(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+function isOpen() {
+  const bv = getBoliviaTime();
+  const cur = bv.getHours()*60 + bv.getMinutes();
+  return SCHEDULE.some(s => cur>=timeToMin(s.open) && cur<timeToMin(s.close));
+}
+function startClock() { updateClock(); setInterval(updateClock, 15000); }
+function updateClock() {
+  const bv = getBoliviaTime();
+  const hh = String(bv.getHours()).padStart(2,'0');
+  const mm = String(bv.getMinutes()).padStart(2,'0');
+  document.getElementById('clockDisplay').textContent = `${hh}:${mm}`;
+  const open = isOpen();
+  const badge = document.getElementById('schedStatus');
+  badge.textContent = open ? '✅ Abierto' : '⛔ Cerrado';
+  badge.className = 'sched-badge ' + (open ? 'sched-open' : 'sched-closed');
+  document.getElementById('closedBanner').style.display = open ? 'none' : 'block';
+}
+
+/* ── BUSY MODE ────────────────────────────────── */
+function syncBusyState() {
+  const btn = document.getElementById('btnBusy');
+  const banner = document.getElementById('busyBanner');
+  btn.textContent = isBusy ? '✅ Demora activa' : '⚠️ Alta demanda';
+  isBusy ? btn.classList.add('on') : btn.classList.remove('on');
+  banner.style.display = isBusy ? 'block' : 'none';
+  db.ref('config/busy').set(isBusy);
+}
+function toggleBusy() {
+  isBusy = !isBusy;
+  localStorage.setItem('rd_busy', JSON.stringify(isBusy));
+  syncBusyState();
+  showToast(isBusy ? '⚠️ Alta demanda activada' : '✅ Demora desactivada');
+}
+
+/* ── BLOCKED DISHES ───────────────────────────── */
+function toggleBlockedPanel() {
+  const p = document.getElementById('blockedPanel');
+  p.style.display = p.style.display === 'block' ? 'none' : 'block';
+}
+function renderBlockedGrid() {
+  document.getElementById('blockedGrid').innerHTML = ALL_DISHES.map(d => {
+    const b = blockedDishes.includes(d);
+    return `<span class="dish-chip${b?' blocked':''}" onclick="toggleDish('${d.replace(/'/g,"\\'")}')">
+      ${b?'🚫 ':''}${d}
+    </span>`;
+  }).join('');
+  db.ref('config/blockedDishes').set(blockedDishes.length ? blockedDishes : null);
+}
+function toggleDish(dish) {
+  const i = blockedDishes.indexOf(dish);
+  i===-1 ? blockedDishes.push(dish) : blockedDishes.splice(i,1);
+  localStorage.setItem('rd_blocked', JSON.stringify(blockedDishes));
+  renderBlockedGrid();
+  showToast(blockedDishes.includes(dish) ? `🚫 ${dish} bloqueado` : `✅ ${dish} disponible`);
+}
+
+/* ── FIREBASE LISTENER ────────────────────────── */
 function startListening() {
   const ref = db.ref('orders');
-
-  // onValue fires immediately with ALL data, then on each change
   const handler = ref.on('value', snap => {
     const data = snap.val() || {};
-
     if (!isFirstLoad) {
-      // Detect newly added orders
       Object.keys(data).forEach(id => {
-        if (!allOrders[id]) {
-          showToast(`🔔 Nuevo pedido #${id}`);
-          playBeep();
+        if (!allOrders[id] && data[id].status !== 'entregado') {
+          triggerAlarm(id);
         }
       });
     }
-
-    allOrders = data;
+    // Keep active orders + merge with local (don't overwrite with entregado from Firebase)
+    Object.keys(data).forEach(id => {
+      if (data[id].status !== 'entregado') allOrders[id] = data[id];
+    });
     isFirstLoad = false;
     renderOrders();
   });
-
-  // Store off reference to detach on logout
   unsubscribe = () => ref.off('value', handler);
 }
 
-/* ─── FILTER ────────────────────────────────────────── */
-function setFilter(f) {
-  currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.f-${f === 'all' ? 'all' : f}`).classList.add('active');
-  renderOrders();
-}
-
-/* ─── RENDER ────────────────────────────────────────── */
-function renderOrders() {
-  const grid = document.getElementById('ordersGrid');
-
-  let orders = Object.values(allOrders);
-  // Sort: newest first
-  orders.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-
-  // Filter
-  if (currentFilter !== 'all') orders = orders.filter(o => o.status === currentFilter);
-
-  // Badge
-  const pending = Object.values(allOrders).filter(o => o.status !== 'entregado').length;
-  document.getElementById('badgePending').textContent = `${pending} pendiente${pending!==1?'s':''}`;
-
-  if (!orders.length) {
-    grid.innerHTML = `<div class="k-empty"><div class="big">🍽️</div><p>${currentFilter==='all' ? 'Esperando pedidos…' : 'Sin pedidos en esta categoría'}</p></div>`;
-    return;
+/* ── ALARM (keeps ringing until clicked) ─────── */
+function triggerAlarm(orderId) {
+  stopAlarm();
+  if (soundEnabled) {
+    playBeep();
+    alarmInterval = setInterval(playBeep, 2200);
   }
-
-  grid.innerHTML = orders.map(o => buildCard(o)).join('');
-
-  // Update timers
-  updateTimers();
+  document.title = `🔔 NUEVO PEDIDO #${orderId} · Cocina`;
+  window.focus();
+  // Full screen overlay
+  const div = document.createElement('div');
+  div.id = 'alarmOverlay';
+  div.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(192,57,43,.9);backdrop-filter:blur(3px);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;';
+  div.innerHTML = `
+    <div style="font-size:5rem;margin-bottom:14px;animation:shake .4s ease infinite alternate">🔔</div>
+    <div style="font-family:\'Noto Serif SC\',serif;font-size:2.2rem;color:#fff;font-weight:700;margin-bottom:6px">¡NUEVO PEDIDO!</div>
+    <div style="color:rgba(255,255,255,.7);font-size:1rem;margin-bottom:24px">Pedido #${orderId}</div>
+    <div style="background:rgba(255,255,255,.2);border:2px solid #fff;color:#fff;padding:12px 36px;border-radius:50px;font-weight:700;font-size:1rem">
+      ✓ Toca para ver
+    </div>
+    <style>@keyframes shake{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}</style>
+  `;
+  div.onclick = () => stopAlarm();
+  document.body.appendChild(div);
+  showToast(`🔔 Nuevo pedido #${orderId}`);
 }
 
-function buildCard(o) {
-  const pillMap = {
-    pendiente:'pill-pendiente', aceptado:'pill-cocina',
-    cocina:'pill-cocina', camino:'pill-camino', entregado:'pill-entregado'
-  };
-  const pillLbl = {
-    pendiente:'⏳ Pendiente', aceptado:'👍 Aceptado',
-    cocina:'🔥 En cocina', camino:'🛵 En camino', entregado:'✅ Entregado'
-  };
-  const isQR = o.metodoPago === 'QR Banco Económico';
-
-  const itemsHtml = o.items.map(it =>
-    `<div class="item-row">
-       <span><span class="item-qty">${it.qty}×</span>${it.name}</span>
-       <span>${fmt(it.price * it.qty)}</span>
-     </div>`
-  ).join('');
-
-  const minutesAgo = o.timestamp ? Math.floor((Date.now() - o.timestamp) / 60000) : null;
-  const timerClass = minutesAgo !== null && minutesAgo > 30 ? 'urgent' : '';
-  const timerText  = minutesAgo !== null ? (minutesAgo < 1 ? 'Hace un momento' : `Hace ${minutesAgo} min`) : o.date;
-  const deliveryInfo = o.km ? `🛵 ${o.km.toFixed(1)} km${o.rain ? ' · 🌧️' : ''}` : '🛵 Delivery';
-
-  // Build action buttons
-  const btnsHtml = `
-    ${isQR && !o.pagoVerificado ? `
-    <button class="act-btn verificar" style="grid-column:1/-1"
-            onclick="verifyPayment('${o.id}')">✅ Verificar pago QR</button>` : ''}
-    <button class="act-btn aceptado ${o.status==='aceptado'?'active':''}"
-            onclick="updateStatus('${o.id}','aceptado')">👍 Aceptar</button>
-    <button class="act-btn cocina ${o.status==='cocina'?'active':''}"
-            onclick="updateStatus('${o.id}','cocina')">🔥 En cocina</button>
-    <button class="act-btn camino ${o.status==='camino'?'active':''}"
-            onclick="updateStatus('${o.id}','camino')">🛵 En camino</button>
-    <button class="act-btn entregado ${o.status==='entregado'?'active':''}"
-            onclick="updateStatus('${o.id}','entregado')">✅ Entregado</button>`;
-
-  return `
-    <div class="order-card s-${o.status}" id="card-${o.id}">
-      <div class="card-head">
-        <div>
-          <div class="card-num">Pedido #${o.id}</div>
-          <div class="card-time" data-ts="${o.timestamp||''}">${timerText}</div>
-        </div>
-        <span class="pill ${pillMap[o.status]||'pill-pendiente'}">${pillLbl[o.status]||'Pendiente'}</span>
-      </div>
-
-      <div class="card-items">${itemsHtml}</div>
-
-      <div class="card-customer">
-        <strong>👤 ${o.customer.name}</strong>
-        📍 ${o.customer.address}
-        ${o.customer.ref ? `<br>🗺️ ${o.customer.ref}` : ''}
-        <br><span class="phone-badge">📞 ${o.customer.phone}</span>
-      </div>
-
-      <!-- Método de pago -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <span style="font-size:.8rem;color:rgba(255,255,255,.4)">Pago</span>
-        <span style="font-size:.8rem;font-weight:700;padding:3px 12px;border-radius:20px;${o.pagoVerificado||!isQR ? 'background:rgba(39,174,96,.2);color:#2ecc71' : 'background:rgba(212,172,13,.2);color:var(--gold)'}">
-          ${isQR ? '📱 QR Banco Económico' : '💵 Efectivo'}
-          ${isQR ? (o.pagoVerificado ? ' ✅ Verificado' : ' ⏳ Pendiente verificación') : ' · Cobrar al entregar'}
-        </span>
-      </div>
-
-      <!-- Comprobante -->
-      ${o.comprobante ? `
-      <div style="margin-bottom:12px">
-        <p style="font-size:.73rem;color:rgba(255,255,255,.35);margin-bottom:6px">📎 Comprobante:</p>
-        <img src="${o.comprobante}"
-             style="width:100%;max-height:160px;object-fit:contain;border-radius:10px;border:1px solid rgba(39,174,96,.5);cursor:pointer"
-             onclick="this.style.maxHeight=this.style.maxHeight==='none'?'160px':'none'"
-             title="Toca para ampliar" />
-      </div>` : ''}
-
-      <div class="card-totals">
-        <span>${deliveryInfo}</span>
-        <span>${fmt(o.delivery||0)}</span>
-      </div>
-      <div class="card-grand">
-        <span>Total del pedido</span>
-        <span>${fmt(o.total)}</span>
-      </div>
-
-      <div class="card-actions">${btnsHtml}</div>
-      <div class="card-timer ${timerClass}" data-id="${o.id}">${timerText}</div>
-    </div>`;
+function stopAlarm() {
+  if (alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+  document.title = 'Panel de Cocina · Río Dragón';
+  const ov = document.getElementById('alarmOverlay');
+  if (ov) ov.remove();
 }
 
-/* ─── STATUS UPDATE → FIREBASE ──────────────────────── */
-async function updateStatus(id, status) {
-  try {
-    await db.ref(`orders/${id}/status`).set(status);
-  } catch(e) {
-    alert('Error al actualizar estado. Verifica conexión.');
-  }
-}
-
-async function verifyPayment(id) {
-  try {
-    await db.ref(`orders/${id}`).update({ pagoVerificado: true, status: 'aceptado' });
-    showToast(`✅ Pago verificado · Pedido #${id} aceptado`);
-  } catch(e) {
-    alert('Error al verificar pago.');
-  }
-}
-
-/* ─── LIVE TIMERS ───────────────────────────────────── */
-function updateTimers() {
-  document.querySelectorAll('[data-ts]').forEach(el => {
-    const ts = parseInt(el.dataset.ts);
-    if (!ts) return;
-    const min = Math.floor((Date.now() - ts) / 60000);
-    el.textContent = min < 1 ? 'Hace un momento' : `Hace ${min} min`;
-  });
-  document.querySelectorAll('.card-timer[data-id]').forEach(el => {
-    const id  = el.dataset.id;
-    const order = allOrders[id];
-    if (!order?.timestamp) return;
-    const min = Math.floor((Date.now() - order.timestamp) / 60000);
-    el.textContent = min < 1 ? 'Hace un momento' : `Hace ${min} min`;
-    el.className   = `card-timer ${min > 30 ? 'urgent' : ''}`;
-  });
-}
-setInterval(updateTimers, 30000); // actualiza cada 30 seg
-
-/* ─── TOAST ─────────────────────────────────────────── */
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3500);
-}
-
-/* ─── SOUND ─────────────────────────────────────────── */
 function playBeep() {
-  if (!soundEnabled) return;
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // Two-tone chime
-    [600, 900].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = 'sine';
-      gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.5);
-      osc.start(ctx.currentTime + i * 0.18);
-      osc.stop(ctx.currentTime + i * 0.18 + 0.5);
+    [700,950,700].forEach((f,i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = f; o.type = 'sine';
+      const t = ctx.currentTime + i*.15;
+      g.gain.setValueAtTime(.3,t);
+      g.gain.exponentialRampToValueAtTime(.001,t+.4);
+      o.start(t); o.stop(t+.4);
     });
-  } catch(e) { /* silent fail */ }
+  } catch(e) {}
 }
+
 function toggleSound() {
   soundEnabled = !soundEnabled;
   document.getElementById('soundBtn').textContent = soundEnabled ? '🔔' : '🔕';
 }
 
-/* ─── KEYBOARD SHORTCUT ─────────────────────────────── */
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+/* ── FILTER ───────────────────────────────────── */
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.f-${f==='all'?'all':f}`)?.classList.add('active');
+  renderOrders();
+}
+
+/* ── RENDER ───────────────────────────────────── */
+function renderOrders() {
+  const grid = document.getElementById('ordersGrid');
+  let orders = Object.values(allOrders);
+  orders.sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+  if (currentFilter !== 'all') orders = orders.filter(o => o.status === currentFilter);
+
+  const pending = Object.values(allOrders).length;
+  document.getElementById('badgePending').textContent = `${pending} activo${pending!==1?'s':''}`;
+
+  if (!orders.length) {
+    grid.innerHTML = `<div class="k-empty"><div class="big">🍽️</div><p>${currentFilter==='all'?'Sin pedidos activos':'Sin pedidos en esta categoría'}</p></div>`;
+    return;
+  }
+  grid.innerHTML = orders.map(o => buildCard(o)).join('');
+  updateTimers();
+}
+
+/* ── BUILD CARD ───────────────────────────────── */
+function buildCard(o) {
+  const pillMap = {pendiente:'pill-pendiente',aceptado:'pill-aceptado',cocina:'pill-cocina',camino:'pill-camino',entregado:'pill-entregado'};
+  const pillLbl = {pendiente:'⏳ Pendiente',aceptado:'👍 Aceptado',cocina:'🔥 En cocina',camino:'🛵 En camino',entregado:'✅ Entregado'};
+  const isQR = o.metodoPago === 'QR Banco Económico';
+
+  const items = (o.items||[]).map(it =>
+    `<div class="item-row"><span><span class="item-qty">${it.qty}×</span>${it.name}</span><span>${fmt(it.price*it.qty)}</span></div>`
+  ).join('');
+
+  const minsAgo = o.timestamp ? Math.floor((Date.now()-o.timestamp)/60000) : null;
+  const timerCls = minsAgo!==null && minsAgo>30 ? 'urgent' : '';
+  const timerTxt = minsAgo!==null ? (minsAgo<1 ? 'Hace un momento' : `Hace ${minsAgo} min`) : (o.date||'');
+  const delInfo  = o.km ? `🛵 ${o.km.toFixed(1)} km${o.rain?' · 🌧️':''}` : '🛵 Delivery';
+
+  // GPS / Maps button
+  let gpsBtn = '';
+  const addr = o.customer?.address || '';
+  if (addr) {
+    const gpsMatch = addr.match(/([-\d.]+),\s*([-\d.]+)/);
+    const mapsUrl = gpsMatch
+      ? `https://www.google.com/maps?q=${gpsMatch[1]},${gpsMatch[2]}`
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;
+    gpsBtn = `<a href="${mapsUrl}" target="_blank" class="btn-gps">📍 Abrir en Google Maps</a>`;
+  }
+
+  const btns = `
+    ${isQR && !o.pagoVerificado ? `<button class="act-btn verificar" style="grid-column:1/-1" onclick="verifyPayment('${o.id}')">✅ Verificar pago QR</button>` : ''}
+    <button class="act-btn aceptado ${o.status==='aceptado'?'active':''}" onclick="updateStatus('${o.id}','aceptado')">👍 Aceptar</button>
+    <button class="act-btn cocina   ${o.status==='cocina'?'active':''}"   onclick="updateStatus('${o.id}','cocina')">🔥 En cocina</button>
+    <button class="act-btn camino   ${o.status==='camino'?'active':''}"   onclick="updateStatus('${o.id}','camino')">🛵 En camino</button>
+    <button class="act-btn entregado" onclick="markDelivered('${o.id}')">✅ Entregado</button>`;
+
+  return `
+    <div class="order-card s-${o.status}" id="card-${o.id}">
+      <div class="card-head">
+        <div><div class="card-num">Pedido #${o.id}</div><div class="card-time" data-ts="${o.timestamp||''}">${timerTxt}</div></div>
+        <span class="pill ${pillMap[o.status]||'pill-pendiente'}">${pillLbl[o.status]||'Pendiente'}</span>
+      </div>
+      <div class="card-items">${items}</div>
+      <div class="card-customer">
+        <strong>👤 ${o.customer?.name||'—'}</strong>
+        📍 ${addr||'—'}
+        ${o.customer?.ref ? `<br>🗺️ ${o.customer.ref}` : ''}
+        <br><span class="phone-badge">📞 ${o.customer?.phone||'—'}</span>
+        ${gpsBtn}
+      </div>
+      <div class="pay-row">
+        <span style="font-size:.76rem;color:rgba(255,255,255,.32)">Pago</span>
+        <span class="pay-badge" style="${o.pagoVerificado||!isQR?'background:rgba(39,174,96,.18);color:#2ecc71':'background:rgba(212,172,13,.14);color:var(--gold)'}">
+          ${isQR?'📱 QR':'💵 Efectivo'}${isQR?(o.pagoVerificado?' ✅':' ⏳'):' · Cobrar'}
+        </span>
+      </div>
+      ${o.comprobante?`
+      <div style="margin-bottom:9px">
+        <p style="font-size:.7rem;color:rgba(255,255,255,.28);margin-bottom:4px">📎 Comprobante:</p>
+        <img src="${o.comprobante}" style="width:100%;max-height:130px;object-fit:contain;border-radius:8px;border:1px solid rgba(39,174,96,.35);cursor:pointer"
+             onclick="this.style.maxHeight=this.style.maxHeight==='none'?'130px':'none'" />
+      </div>`:''}
+      <div class="card-totals"><span>${delInfo}</span><span>${fmt(o.delivery||0)}</span></div>
+      <div class="card-grand"><span>Total</span><span>${fmt(o.total||0)}</span></div>
+      <div class="card-actions">${btns}</div>
+      <div class="card-timer ${timerCls}" data-id="${o.id}">${timerTxt}</div>
+    </div>`;
+}
+
+/* ── STATUS UPDATES ───────────────────────────── */
+async function updateStatus(id, status) {
+  try { await db.ref(`orders/${id}/status`).set(status); }
+  catch(e) { alert('Error al actualizar. Verifica conexión.'); }
+}
+
+async function verifyPayment(id) {
+  try {
+    await db.ref(`orders/${id}`).update({pagoVerificado:true, status:'aceptado'});
+    showToast(`✅ Pago verificado · Pedido #${id}`);
+  } catch(e) { alert('Error al verificar pago.'); }
+}
+
+async function markDelivered(id) {
+  try {
+    await db.ref(`orders/${id}/status`).set('entregado');
+    const o = allOrders[id];
+    if (o) {
+      const record = {
+        ...o,
+        status: 'entregado',
+        deliveredAt: getBoliviaTime().toLocaleString('es-BO')
+      };
+      historyOrders.unshift(record);
+      localStorage.setItem('rd_history', JSON.stringify(historyOrders.slice(0,300)));
+    }
+    delete allOrders[id];
+    showToast(`🎉 Pedido #${id} entregado`);
+    setTimeout(renderOrders, 400);
+  } catch(e) { alert('Error al marcar entregado.'); }
+}
+
+/* ── HISTORY ──────────────────────────────────── */
+function openHistory() {
+  const body = document.getElementById('historyBody');
+  const totalEl = document.getElementById('histTotal');
+  if (!historyOrders.length) {
+    body.innerHTML = `<div class="hist-empty">📭 Sin pedidos entregados este turno</div>`;
+    totalEl.textContent = '';
+  } else {
+    const totalBs = historyOrders.reduce((s,o)=>s+(o.total||0),0);
+    totalEl.textContent = `Total turno: ${fmt(totalBs)}`;
+    body.innerHTML = historyOrders.map(o=>`
+      <div class="hist-item">
+        <div class="hi-head">
+          <span class="hi-num">Pedido #${o.id}</span>
+          <span class="hi-time">${o.deliveredAt||o.date||''}</span>
+        </div>
+        <div class="hi-info">
+          👤 ${o.customer?.name||'—'} · 📞 ${o.customer?.phone||'—'}<br>
+          ${(o.items||[]).map(it=>`${it.qty}× ${it.name}`).join(', ')}<br>
+          💰 ${fmt(o.total||0)} · ${o.metodoPago||'Efectivo'}
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('historyModal').classList.add('open');
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').classList.remove('open');
+}
+
+function confirmCloseShift() {
+  if (!confirm('¿Cerrar turno? Se borrará el historial de pedidos entregados.')) return;
+  historyOrders = [];
+  localStorage.removeItem('rd_history');
+  closeHistory();
+  showToast('🔒 Turno cerrado · Historial limpio');
+}
+
+/* ── TIMERS ───────────────────────────────────── */
+function updateTimers() {
+  document.querySelectorAll('[data-ts]').forEach(el=>{
+    const ts = parseInt(el.dataset.ts);
+    if(!ts) return;
+    const m = Math.floor((Date.now()-ts)/60000);
+    el.textContent = m<1 ? 'Hace un momento' : `Hace ${m} min`;
+  });
+  document.querySelectorAll('.card-timer[data-id]').forEach(el=>{
+    const o = allOrders[el.dataset.id];
+    if(!o?.timestamp) return;
+    const m = Math.floor((Date.now()-o.timestamp)/60000);
+    el.textContent = m<1 ? 'Hace un momento' : `Hace ${m} min`;
+    el.className = `card-timer ${m>30?'urgent':''}`;
+  });
+}
+setInterval(updateTimers, 30000);
+
+/* ── TOAST ────────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+/* ── KEYBOARD ─────────────────────────────────── */
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('loginScreen').style.display!=='none') doLogin();
+  if(e.key==='Escape') stopAlarm();
 });
 </script>
 </body>
