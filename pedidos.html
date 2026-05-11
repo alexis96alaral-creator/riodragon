@@ -1114,26 +1114,46 @@ renderCart();
 document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
 
 // Restaurar seguimiento si hay un pedido activo guardado
-(async () => {
+function tryRestoreOrder() {
   const savedOrder = localStorage.getItem('rd_active_order');
   if (!savedOrder) return;
-  try {
-    const snap = await db.ref('orders/' + savedOrder).once('value');
-    const order = snap.val();
-    if (!order) { localStorage.removeItem('rd_active_order'); return; }
-    // Borrar si fue entregado hace más de 3 horas
-    const hoursAgo = (Date.now() - (order.timestamp||0)) / 3600000;
-    if (hoursAgo > 3 && order.status === 'entregado') {
-      localStorage.removeItem('rd_active_order'); return;
-    }
-    // Mostrar pantalla de seguimiento
-    document.getElementById('orderNumTag').textContent = `Pedido #${savedOrder}`;
-    document.getElementById('appBody').style.display   = 'none';
-    document.getElementById('successScreen').classList.add('show');
-    document.getElementById('nav').style.display       = 'none';
-    startTracking(savedOrder, order);
-  } catch(e) { localStorage.removeItem('rd_active_order'); }
-})();
+
+  // Mostrar pantalla de tracking inmediatamente mientras carga Firebase
+  document.getElementById('orderNumTag').textContent = `Pedido #${savedOrder}`;
+  document.getElementById('appBody').style.display   = 'none';
+  document.getElementById('successScreen').classList.add('show');
+  document.getElementById('nav').style.display       = 'none';
+  document.getElementById('trackIcon').textContent       = '⏳';
+  document.getElementById('trackStatusText').textContent = 'Cargando tu pedido...';
+  document.getElementById('trackStatusSub').textContent  = 'Conectando con el restaurante';
+
+  // Luego conectar a Firebase
+  db.ref('orders/' + savedOrder).once('value')
+    .then(snap => {
+      const order = snap.val();
+      if (!order) {
+        // Pedido no existe, volver al menú
+        localStorage.removeItem('rd_active_order');
+        goBack();
+        return;
+      }
+      // Si fue entregado hace más de 3 horas, limpiar
+      const hoursAgo = (Date.now() - (order.timestamp||0)) / 3600000;
+      if (hoursAgo > 3 && order.status === 'entregado') {
+        localStorage.removeItem('rd_active_order');
+        goBack();
+        return;
+      }
+      startTracking(savedOrder, order);
+    })
+    .catch(() => {
+      // Error de red — mantener la pantalla pero mostrar mensaje
+      document.getElementById('trackStatusText').textContent = 'Sin conexión';
+      document.getElementById('trackStatusSub').textContent  = 'Verifica tu internet y recarga la página';
+    });
+}
+
+tryRestoreOrder();
 </script>
 </body>
 </html>
