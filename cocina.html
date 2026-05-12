@@ -322,6 +322,7 @@ function doLogin() {
   startClock();
   syncBusyState();
   renderBlockedGrid();
+  requestNotifPermission();
   startListening();
 }
 
@@ -419,6 +420,25 @@ function startListening() {
   unsubscribe = () => ref.off('value', handler);
 }
 
+/* ── NOTIFICATIONS (sistema operativo) ────────── */
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendSystemNotif(orderId) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+  const n = new Notification('🔔 Nuevo pedido en Río Dragón', {
+    body: `Pedido #${orderId} — Toca para ver`,
+    icon: 'https://res.cloudinary.com/dajk3ivds/image/upload/v1778372423/WhatsApp_Image_2026-05-09_at_8.19.58_PM_zbqsxj.jpg',
+    requireInteraction: true,  // stays until clicked
+    tag: 'new-order'
+  });
+  n.onclick = () => { window.focus(); n.close(); stopAlarm(); };
+}
+
 /* ── ALARM (keeps ringing until clicked) ─────── */
 function triggerAlarm(orderId) {
   stopAlarm();
@@ -428,6 +448,7 @@ function triggerAlarm(orderId) {
   }
   document.title = `🔔 NUEVO PEDIDO #${orderId} · Cocina`;
   window.focus();
+  sendSystemNotif(orderId);
   // Full screen overlay
   const div = document.createElement('div');
   div.id = 'alarmOverlay';

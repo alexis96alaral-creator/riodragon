@@ -353,6 +353,18 @@
 
     .pac-container { z-index: 99999 !important; font-family: var(--font-b) !important; }
 
+    /* ─── BUSY BANNER ────────────────────────────────────── */
+    #busyBanner {
+      position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 99;
+      background: linear-gradient(90deg, #7d3c00, #e67e22, #7d3c00);
+      background-size: 200% 100%;
+      animation: busySlide 3s linear infinite;
+      padding: 9px 20px; text-align: center;
+      font-size: .82rem; font-weight: 700; color: #fff;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    @keyframes busySlide { 0%{background-position:0%} 100%{background-position:200%} }
+
     /* ─── TRACKING SCREEN ────────────────────────────────── */
     #successScreen {
       display: none; min-height: 100vh;
@@ -475,6 +487,11 @@
     <span id="cartBadge">0</span>
   </button>
 </nav>
+
+<!-- ── BUSY BANNER (alta demanda desde cocina) ──────────── -->
+<div id="busyBanner" style="display:none">
+  <span>⚠️ Cocina con alta demanda — Los pedidos pueden demorar más de lo normal</span>
+</div>
 
 <!-- ── APP BODY ─────────────────────────────────────────── -->
 <div class="app-body" id="appBody">
@@ -1212,6 +1229,49 @@ function renderTracking(o) {
 renderMenu();
 renderCart();
 document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
+
+/* ─── INIT ──────────────────────────────────────────────── */
+renderMenu();
+renderCart();
+document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
+
+// Listen to busy state from cocina in real time
+db.ref('config/busy').on('value', snap => {
+  const busy = snap.val();
+  const banner = document.getElementById('busyBanner');
+  if (banner) banner.style.display = busy ? 'flex' : 'none';
+  // Adjust app body padding when banner visible
+  const appBody = document.getElementById('appBody');
+  if (appBody) appBody.style.paddingTop = busy ? 'calc(var(--nav-h) + 38px)' : '';
+});
+
+// Listen to blocked dishes from cocina
+db.ref('config/blockedDishes').on('value', snap => {
+  const blocked = snap.val() || [];
+  // Grey out blocked dishes in menu
+  document.querySelectorAll('.menu-card').forEach(card => {
+    const nameEl = card.querySelector('h3');
+    if (!nameEl) return;
+    const name = nameEl.textContent.trim();
+    const isBlocked = blocked.includes(name);
+    card.style.opacity = isBlocked ? '.4' : '';
+    card.style.pointerEvents = isBlocked ? 'none' : '';
+    const addBtn = card.querySelector('.btn-add');
+    if (addBtn) addBtn.title = isBlocked ? 'No disponible' : 'Agregar';
+    // Add sold-out tag if blocked
+    let tag = card.querySelector('.sold-out-tag');
+    if (isBlocked && !tag) {
+      tag = document.createElement('div');
+      tag.className = 'sold-out-tag';
+      tag.textContent = '🚫 No disponible';
+      tag.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700;border-radius:16px;pointer-events:none;';
+      card.style.position = 'relative';
+      card.appendChild(tag);
+    } else if (!isBlocked && tag) {
+      tag.remove();
+    }
+  });
+});
 
 // Restaurar seguimiento si hay un pedido activo guardado
 function tryRestoreOrder() {
