@@ -608,6 +608,8 @@
           <span>Total</span>
           <span id="modalTotal">Bs. 0.00</span>
         </div>
+        <!-- ETA -->
+        <div id="modalETA" style="display:none;margin-top:8px;background:rgba(39,174,96,.1);border-radius:8px;padding:6px 10px;font-size:.8rem;color:var(--success);font-weight:600;text-align:center"></div>
       </div>
 
       <div class="form-group">
@@ -627,6 +629,11 @@
       <div class="form-group">
         <label>Teléfono / WhatsApp</label>
         <input type="tel" id="fPhone" placeholder="78901234" />
+      </div>
+      <!-- NOTAS DEL PEDIDO -->
+      <div class="form-group">
+        <label>📝 Notas del pedido <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)">(opcional)</span></label>
+        <textarea id="fNotes" placeholder="Ej: sin cebolla, extra salsa, timbre no funciona…" style="width:100%;border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:.88rem;background:var(--bg);outline:none;resize:vertical;min-height:72px;transition:border-color .2s;font-family:var(--font-b)" onfocus="this.style.borderColor='var(--red)'" onblur="this.style.borderColor='var(--border)'"></textarea>
       </div>
 
       <!-- ── MÉTODO DE PAGO ── -->
@@ -761,6 +768,7 @@ function calcDeliveryCost(km, rain) {
 let cart         = [];
 let deliveryCost = 0;
 let deliveryKm   = 0;
+let deliveryMins = 0;   // minutos estimados de ruta
 let isRaining    = false;
 let mapsReady    = false;
 let autocomplete = null;
@@ -830,9 +838,25 @@ function calcRoute(lat, lng) {
       return;
     }
     const el = res.rows[0].elements[0];
+    deliveryKm  = el.distance.value / 1000;
+
+    // ── ZONA DE COBERTURA: máximo 15 km ──
+    if (deliveryKm > 15) {
+      setDelError(`Fuera de cobertura (${deliveryKm.toFixed(1)} km)`);
+      document.getElementById('addrStatus').innerHTML =
+        `<span style="color:#e74c3c;font-weight:700">⛔ Lo sentimos, solo hacemos delivery hasta 15 km.<br>Tu dirección está a ${deliveryKm.toFixed(1)} km.</span>`;
+      deliveryKm = 0;
+      return;
+    }
+
     deliveryKm   = el.distance.value / 1000;
+    deliveryMins = el.duration.value / 60;   // minutos de ruta
     deliveryCost = calcDeliveryCost(deliveryKm, isRaining);
-    document.getElementById('addrStatus').textContent = `✅ ${el.distance.text} · ${el.duration.text} en moto`;
+
+    // ETA: tiempo de ruta + 15 min preparación
+    const eta = Math.ceil(deliveryMins + 15);
+    document.getElementById('addrStatus').textContent =
+      `✅ ${el.distance.text} · ~${eta} min estimados`;
     updateDelDisplays();
   });
 }
@@ -860,7 +884,8 @@ function updateDelDisplays() {
   const chipRow = document.getElementById('delChipRow');
   if (chipRow && deliveryKm > 0) {
     chipRow.style.display = 'flex';
-    document.getElementById('distChip').textContent = `📍 ${deliveryKm.toFixed(1)} km por ruta`;
+    const eta = Math.ceil(deliveryMins + 15);
+    document.getElementById('distChip').textContent = `📍 ${deliveryKm.toFixed(1)} km · ~${eta} min`;
   }
   const subEl = document.getElementById('cartSubtotal');
   if (subEl) subEl.textContent = fmt(sub);
@@ -869,8 +894,14 @@ function updateDelDisplays() {
   document.getElementById('cartTotalNav').textContent = fmt(sub + deliveryCost);
   const md = document.getElementById('modalDelivery');
   const mt = document.getElementById('modalTotal');
+  const me = document.getElementById('modalETA');
   if (md) md.textContent = fmt(deliveryCost);
   if (mt) mt.textContent = fmt(sub + deliveryCost);
+  if (me && deliveryMins > 0) {
+    const eta = Math.ceil(deliveryMins + 15);
+    me.textContent = `⏱ Estimado: ~${eta} minutos`;
+    me.style.display = '';
+  }
 }
 
 /* ─── MENU RENDER ───────────────────────────────────────── */
@@ -991,6 +1022,8 @@ function openCheckout() {
   document.getElementById('uploadPlaceholder').style.display = '';
   document.getElementById('comprobantePreview').style.display = 'none';
   document.getElementById('comprobanteStatus').textContent = '';
+  document.getElementById('fNotes').value = '';
+  document.getElementById('modalETA').style.display = 'none';
   document.getElementById('checkoutModal').classList.add('open');
   setTimeout(initAutocomplete, 100);
 }
@@ -1002,9 +1035,11 @@ async function submitOrder() {
   const address = document.getElementById('fAddress').value.trim();
   const ref     = document.getElementById('fRef').value.trim();
   const phone   = document.getElementById('fPhone').value.trim();
+  const notes   = document.getElementById('fNotes').value.trim();
   if (!name || !phone) { alert('Completa: nombre y teléfono.'); return; }
   if (!address && deliveryKm === 0) { alert('Ingresa tu dirección de entrega o usa el GPS.'); return; }
   const finalAddress = address || `GPS: ${document.getElementById('addrStatus').textContent}`;
+  const eta = deliveryMins > 0 ? Math.ceil(deliveryMins + 15) : null;
 
   // Validar comprobante si eligió QR
   if (selectedPay === 'qr' && !comprobanteB64) {
@@ -1032,6 +1067,8 @@ async function submitOrder() {
       metodoPago:  selectedPay === 'qr' ? 'QR Banco Económico' : 'Efectivo',
       comprobante: comprobanteB64 || null,
       customer:    { name, address: finalAddress, ref, phone },
+      notes:       notes || null,
+      eta:         eta,
       items:       cart.map(c => ({ id:c.id, name:c.name, price:c.price, qty:c.qty })),
       subtotal:    sub,
       delivery:    deliveryCost,
@@ -1042,7 +1079,7 @@ async function submitOrder() {
 
     await db.ref('orders/' + orderNum).set(order);
 
-    cart = []; deliveryCost = 0; deliveryKm = 0; isRaining = false;
+    cart = []; deliveryCost = 0; deliveryKm = 0; deliveryMins = 0; isRaining = false;
     autocomplete = null; comprobanteB64 = null;
     renderCart();
     closeCheckout();

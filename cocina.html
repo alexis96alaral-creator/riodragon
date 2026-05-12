@@ -580,6 +580,8 @@ function buildCard(o) {
              onclick="this.style.maxHeight=this.style.maxHeight==='none'?'130px':'none'" />
       </div>`:''}
       <div class="card-totals"><span>${delInfo}</span><span>${fmt(o.delivery||0)}</span></div>
+      ${o.eta ? `<div style="font-size:.76rem;color:var(--success);margin-bottom:4px">⏱ ETA: ~${o.eta} min al cliente</div>` : ''}
+      ${o.notes ? `<div style="background:rgba(212,172,13,.1);border:1px solid rgba(212,172,13,.25);border-radius:8px;padding:7px 10px;font-size:.78rem;color:var(--gold);margin-bottom:8px">📝 <strong>Nota:</strong> ${o.notes}</div>` : ''}
       <div class="card-grand"><span>Total</span><span>${fmt(o.total||0)}</span></div>
       <div class="card-actions">${btns}</div>
       <div class="card-timer ${timerCls}" data-id="${o.id}">${timerTxt}</div>
@@ -588,8 +590,34 @@ function buildCard(o) {
 
 /* ── STATUS UPDATES ───────────────────────────── */
 async function updateStatus(id, status) {
-  try { await db.ref(`orders/${id}/status`).set(status); }
-  catch(e) { alert('Error al actualizar. Verifica conexión.'); }
+  try {
+    await db.ref(`orders/${id}/status`).set(status);
+    // WhatsApp automático cuando pasa a "En camino"
+    if (status === 'camino') {
+      const o = allOrders[id];
+      if (o?.customer?.phone) sendWhatsApp(o);
+    }
+  } catch(e) { alert('Error al actualizar. Verifica conexión.'); }
+}
+
+function sendWhatsApp(o) {
+  const phone = o.customer.phone.replace(/\D/g,'');
+  // Número Bolivia: agregar 591 si no tiene código de país
+  const fullPhone = phone.startsWith('591') ? phone : `591${phone}`;
+  const items = (o.items||[]).map(it=>`${it.qty}× ${it.name}`).join(', ');
+  const eta   = o.eta ? `~${o.eta} minutos` : 'pronto';
+  const msg = encodeURIComponent(
+    `🐉 *Río Dragón* — Hola ${o.customer.name}! 🛵\n\n` +
+    `Tu pedido *#${o.id}* ya está en camino a tu dirección:\n` +
+    `📍 ${o.customer.address}\n\n` +
+    `📦 *Tu pedido:*\n${items}\n\n` +
+    `⏱ Llegada estimada: *${eta}*\n` +
+    `💰 Total: *${fmt(o.total)}*\n\n` +
+    `¡Gracias por elegir Río Dragón! 🥢`
+  );
+  // Abre WhatsApp Web automáticamente
+  window.open(`https://wa.me/${fullPhone}?text=${msg}`, '_blank');
+  showToast(`📱 WhatsApp abierto para ${o.customer.name}`);
 }
 
 async function verifyPayment(id) {
