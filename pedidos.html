@@ -460,14 +460,40 @@
     /* ─── BUSY BANNER ────────────────────────────────────── */
     #busyBanner {
       position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 99;
-      background: linear-gradient(90deg, #7d3c00, #e67e22, #7d3c00);
-      background-size: 200% 100%;
-      animation: busySlide 3s linear infinite;
+      background: #7d3c00;
       padding: 9px 20px; text-align: center;
-      font-size: .82rem; font-weight: 700; color: #fff;
+      font-size: .75rem; font-weight: 700; color: #fff;
       display: flex; align-items: center; justify-content: center; gap: 8px;
+      letter-spacing: .06em; text-transform: uppercase;
     }
-    @keyframes busySlide { 0%{background-position:0%} 100%{background-position:200%} }
+
+    /* ─── CLOSED BANNER ──────────────────────────────────── */
+    #closedOverlay {
+      position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 98;
+      background: var(--ink); border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 10px 20px;
+      display: flex; align-items: center; justify-content: center;
+      flex-wrap: wrap; gap: 8px;
+      text-align: center;
+    }
+    .closed-label {
+      font-family: var(--font-b); font-size: .7rem; font-weight: 700;
+      letter-spacing: .14em; text-transform: uppercase; color: var(--crimson);
+    }
+    .closed-sep   { color: rgba(255,255,255,.2); font-size: .7rem; }
+    .closed-times { font-size: .7rem; color: rgba(255,255,255,.55); letter-spacing: .04em; font-weight: 300; }
+    .closed-clock-inline {
+      font-family: var(--font-h); font-size: .75rem;
+      color: rgba(255,255,255,.35); letter-spacing: .08em;
+    }
+    /* Push app body down when banner visible */
+    .has-closed-banner { padding-top: calc(var(--nav-h) + 40px) !important; }
+
+    /* Disable add buttons when closed */
+    body.is-closed .btn-add {
+      background: #ccc; cursor: not-allowed; pointer-events: none;
+    }
+    body.is-closed .btn-checkout { background: #ccc; cursor: not-allowed; pointer-events: none; }
 
     /* ─── TRACKING SCREEN ────────────────────────────────── */
     #successScreen {
@@ -594,7 +620,18 @@
 
 <!-- ── BUSY BANNER (alta demanda desde cocina) ──────────── -->
 <div id="busyBanner" style="display:none">
-  <span>⚠️ Cocina con alta demanda — Los pedidos pueden demorar más de lo normal</span>
+  <span>Cocina con alta demanda — Los pedidos pueden demorar más de lo normal</span>
+</div>
+
+<!-- ── CLOSED BANNER (fuera de horario) ─────────────────── -->
+<div id="closedOverlay" style="display:none">
+  <div class="closed-inner">
+    <span class="closed-label">Cocina cerrada</span>
+    <span class="closed-sep">·</span>
+    <span class="closed-times">Almuerzo 11:50–14:50 &nbsp;|&nbsp; Cena 18:45–21:50</span>
+    <span class="closed-sep">·</span>
+    <span class="closed-clock-inline" id="closedClock">--:--</span>
+  </div>
 </div>
 
 <!-- ── APP BODY ─────────────────────────────────────────── -->
@@ -602,7 +639,7 @@
   <div class="hero">
     <div class="hero-inner">
       <div class="hero-eyebrow">Río Dragón · Chifa &amp; Delivery</div>
-      <h1><em>Alta cocina chifa,</em><br>preparada al momento<br>y llevada a tu mesa</h1>
+      <h1><em>Comida tradicional</em><br>chifa · peruano<br>y llevada a tu mesa</h1>
       <div class="hero-divider"></div>
       <p>Ingredientes frescos · Wok a fuego vivo · Santa Cruz de la Sierra</p>
       <div style="margin-top:20px">
@@ -1378,10 +1415,51 @@ renderMenu();
 renderCart();
 document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
 
-/* ─── INIT ──────────────────────────────────────────────── */
-renderMenu();
-renderCart();
-document.addEventListener('keydown', e => { if(e.key==='Escape'){ closeCheckout(); closeCart(); } });
+/* ─── HORARIO (Bolivia UTC-4) ────────────────────────────── */
+const SCHEDULE = [
+  { open:'11:50', close:'14:50' },
+  { open:'18:45', close:'21:50' },
+];
+
+function getBoliviaTime() {
+  const now = new Date();
+  return new Date(now.getTime() + now.getTimezoneOffset()*60000 - 4*3600000);
+}
+function timeToMin(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+
+function isOpen() {
+  const bv  = getBoliviaTime();
+  const cur = bv.getHours()*60 + bv.getMinutes();
+  return SCHEDULE.some(s => cur >= timeToMin(s.open) && cur < timeToMin(s.close));
+}
+
+function updateSchedule() {
+  const bv = getBoliviaTime();
+  const hh = String(bv.getHours()).padStart(2,'0');
+  const mm = String(bv.getMinutes()).padStart(2,'0');
+  const clockEl = document.getElementById('closedClock');
+  if (clockEl) clockEl.textContent = `${hh}:${mm}`;
+
+  const open    = isOpen();
+  const overlay = document.getElementById('closedOverlay');
+  const appBody = document.getElementById('appBody');
+
+  if (open) {
+    // Abierto — ocultar banner, habilitar botones
+    overlay.style.display = 'none';
+    appBody?.classList.remove('has-closed-banner');
+    document.body.classList.remove('is-closed');
+  } else {
+    // Cerrado — mostrar banner, deshabilitar agregar al carrito
+    overlay.style.display = 'flex';
+    appBody?.classList.add('has-closed-banner');
+    document.body.classList.add('is-closed');
+  }
+}
+
+// Check schedule immediately and every minute
+updateSchedule();
+setInterval(updateSchedule, 60000);
 
 // Listen to busy state from cocina in real time
 db.ref('config/busy').on('value', snap => {
