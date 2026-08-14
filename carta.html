@@ -103,6 +103,37 @@
   .cierre img{width:100%;height:100%;object-fit:contain}
   .cierre .corner{display:none}
 
+
+  /* ============ VERSIÓN MÓVIL (QR en mesa) ============ */
+  @media screen and (max-width:900px){
+    body{padding:0;gap:0;background:#0a0a0a}
+    .page{width:100%;height:auto;padding:10vw 6vw 12vw;border-left:none;border-right:none;border-radius:0}
+    .page::before{inset:3vw}
+    .corner{width:7vw;height:7vw}
+    .c-tl{top:3vw;left:3vw}.c-tr{top:3vw;right:3vw}.c-bl{bottom:3vw;left:3vw}.c-br{bottom:3vw;right:3vw}
+    .page-inner{height:auto}
+    .colU{height:auto;gap:11vw}
+    .seccion{padding:1vw 0}
+    .sello{width:38px;height:38px;font-size:16px;border-radius:9px;margin-bottom:8px}
+    .titulo-seccion{font-size:22px;letter-spacing:3px}
+    .titulo-seccion::before,.titulo-seccion::after{width:34px}
+    .subtitulo-seccion{font-size:12px}
+    .sep-titulo{height:14px}
+    .tit-mid{margin-top:26px}
+    .item{margin-bottom:13px}
+    .item-nombre{font-size:16.5px}
+    .item-desc{font-size:13.5px;max-width:100%;margin-top:3px;line-height:1.4}
+    .precio-box{flex:0 0 56px;width:56px;height:26px;font-size:15px;border-radius:6px}
+    .cita{font-size:15px;padding:8px 0}
+    .page-num{display:none}
+    .portada{min-height:100svh;padding:16vw 8vw;justify-content:center}
+    .dragon-img{width:80vw}
+    .divisor{margin-top:9vw;width:64px}
+    .lema{font-size:13px;margin-top:7vw}
+    .cierre{height:auto;padding:0;display:block}
+    .cierre img{width:100%;height:auto;object-fit:contain;display:block}
+  }
+
   @media print{
     body{padding:0;gap:0;background:var(--panel);-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .page{border:none;page-break-after:always}
